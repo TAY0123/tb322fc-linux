@@ -9,12 +9,14 @@ Source1:        50-plymouth.conf
 Source2:        50-retain-splash.conf
 Source3:        50-plymouth-initramfs.sh
 Source4:        plymouth-init
+# Lenovo imagefv/main_logo2.bmp: cropped wordmark, resized to 730x243.
+Source5:        bgrt-fallback.png
 BuildArch:      noarch
 BuildRequires:  systemd-rpm-macros
 Requires:       plymouth >= 26.134.222
 Requires:       plymouth-dracut >= 26.134.222
 Requires:       plymouth-branding-openSUSE
-Requires:       plymouth-theme-spinner >= 26.134.222-4
+Requires:       plymouth-theme-bgrt >= 26.134.222-4
 Requires:       plymouth-plugin-label-ft >= 26.134.222
 Requires:       cantarell-fonts
 Requires:       distribution-logos-openSUSE-Tumbleweed
@@ -28,9 +30,10 @@ Requires:       fontconfig
 
 %description
 Display scaling, landscape rendering and a Volume Up alternative to Escape
-for the TB322FC tablet. The packaged Spinner theme displays the official
-Tumbleweed logo without relying on ACPI BGRT. Theme artwork, colours and
-timing stay unchanged. kShim incorporates the packaged boot defaults when
+for the TB322FC tablet. The packaged BGRT theme displays a cropped Lenovo
+firmware logo when ACPI BGRT is unavailable and keeps the official Tumbleweed
+watermark. Theme layout, colours and timing stay unchanged.
+kShim incorporates the packaged boot defaults when
 generating the boot image; explicit arguments win. The last splash frame
 is retained for desktop handoff.
 The initramfs includes Plymouth, the selected theme, fonts and input data;
@@ -46,6 +49,7 @@ install -Dm644 %{SOURCE1} %{buildroot}%{_prefix}/lib/kshim-freedom/cmdline.d/50-
 install -Dm644 %{SOURCE2} %{buildroot}%{_unitdir}/plymouth-quit.service.d/50-retain-splash.conf
 install -Dm755 %{SOURCE3} %{buildroot}%{_prefix}/lib/kshim-freedom/initramfs.d/50-plymouth.sh
 install -Dm755 %{SOURCE4} %{buildroot}%{_prefix}/lib/kshim-freedom/plymouth-init
+install -Dm644 %{SOURCE5} %{buildroot}%{_datadir}/plymouth/themes/spinner/bgrt-fallback.png
 
 %files
 %dir %{_sysconfdir}/plymouth
@@ -58,5 +62,9 @@ install -Dm755 %{SOURCE4} %{buildroot}%{_prefix}/lib/kshim-freedom/plymouth-init
 %{_prefix}/lib/kshim-freedom/plymouth-init
 %dir %{_unitdir}/plymouth-quit.service.d
 %{_unitdir}/plymouth-quit.service.d/50-retain-splash.conf
+%dir %{_datadir}/plymouth
+%dir %{_datadir}/plymouth/themes
+%dir %{_datadir}/plymouth/themes/spinner
+%{_datadir}/plymouth/themes/spinner/bgrt-fallback.png
 
 %changelog

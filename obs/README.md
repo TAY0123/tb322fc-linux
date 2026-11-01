@@ -120,12 +120,16 @@ standalone volume buttons. `plymouth.panel-rotation=90` overrides Plymouth's
 own internal-display drawing only, leaving desktop DRM orientation unchanged.
 
 `plymouth-defaults-tb322fc` depends on the unmodified official
-`plymouth-branding-openSUSE` and Cantarell font, but selects the packaged
-Spinner theme for this Device Tree tablet. Both Spinner and BGRT retain the
-openSUSE `WatermarkPath` pointing to the official Tumbleweed logo; Spinner
-does not depend on a firmware/OEM logo. The package supplies 2x scaling, native
-DRM selection and `XkbExtraEscButton` for Volume Up. Theme colours, layout,
-animations and text remain unchanged.
+`plymouth-branding-openSUSE` and Cantarell font, and selects the packaged
+BGRT theme. This Device Tree tablet has no ACPI BGRT image, so the package
+supplies `spinner/bgrt-fallback.png` using BGRT's built-in fallback support.
+The 730x243 PNG contains only the Lenovo wordmark from the model's stock
+`imagefv` firmware (`main_logo2.bmp`), without the Android footer. It is
+cropped after a lossless quarter-turn and resized from 913x304; it contains
+no per-device data. Both Spinner and BGRT retain openSUSE's `WatermarkPath`
+pointing to the official Tumbleweed logo. The package supplies 2x scaling,
+native DRM selection and `XkbExtraEscButton` for Volume Up. Theme colours,
+layout, animations and text remain unchanged.
 A short press switches between animation and detailed console output during
 boot or shutdown; the power button is not
 remapped. The package installs `splash` and panel-rotation defaults under
@@ -136,8 +140,9 @@ No `quiet` argument or reduced logging level is added. A `plymouth-quit.service`
 drop-in retains the last graphic frame until the display manager takes over, without adding a
 boot delay. It does not keep the animation running after Plymouth exits.
 A packaged kShim initramfs collector uses Plymouth's upstream asset installer
-and dracut's dependency resolver for the selected theme, fonts, udev and XKB
-data. The existing BusyBox init starts Plymouth before finding/mounting rootfs,
+and dracut's dependency resolver for the selected theme (including the Lenovo
+fallback and Tumbleweed watermark), fonts, udev and XKB data. The existing
+BusyBox init starts Plymouth before finding/mounting rootfs,
 stops the temporary udev instance, and asks Plymouth to chroot into the mounted
 root. Its `/run` state survives into the normal systemd services. This preserves
 root selection, partition write protection and visible text on handoff failure.

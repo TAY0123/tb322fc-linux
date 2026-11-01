@@ -1,4 +1,14 @@
 -------------------------------------------------------------------
+Sun Nov 01 11:46:22 UTC 2026 - h0cheung <hcheunh@gmail.com>
+
+- Select BGRT by default and require the packaged BGRT theme.
+- Add the device-validated 730x243 Lenovo firmware wordmark as the BGRT
+  fallback, cropped from main_logo2.bmp without its Android footer.
+- Include the fallback through the existing initramfs theme collector;
+  preserve the Tumbleweed watermark, 2x scaling and 90-degree rotation.
+- Own the shared theme directories for OBS file-list checks.
+
+-------------------------------------------------------------------
 Sun Nov 01 10:21:34 UTC 2026 - h0cheung <hcheunh@gmail.com>
 
 - Select Spinner with the official Tumbleweed logo on this non-BGRT tablet.
