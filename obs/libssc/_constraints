@@ -1,0 +1,10 @@
+<constraints>
+  <hardware>
+    <cpu>
+      <flag>bf16</flag>
+      <flag>i8mm</flag>
+      <flag>sha3</flag>
+      <flag>sm4</flag>
+    </cpu>
+  </hardware>
+</constraints>

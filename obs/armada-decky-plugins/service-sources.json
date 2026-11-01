@@ -1,0 +1,10 @@
+{
+  "sources": [
+    {
+      "file": "freedom-control-61a8e9631c0ba597ff0f48bc91ae766eef20bf6a.tar.gz",
+      "kind": "git",
+      "dest": "freedom-control",
+      "sha256": "d754334f0cb39137ddb203c656c030bc05f9cc3f12b0f2cf8e92be746160c999"
+    }
+  ]
+}

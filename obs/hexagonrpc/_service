@@ -1,0 +1,6 @@
+<services>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://codeload.github.com/linux-msm/hexagonrpc/tar.gz/598b591ae9da6a6cfe2ca5ea78998019ca6395ea</param>
+    <param name="filename">hexagonrpc-598b591ae9da6a6cfe2ca5ea78998019ca6395ea.tar.gz</param>
+  </service>
+</services>

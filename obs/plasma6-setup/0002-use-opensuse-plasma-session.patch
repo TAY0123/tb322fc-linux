@@ -1,0 +1,16 @@
+Subject: Use the openSUSE Plasma Wayland session during first boot
+
+openSUSE names the session plasmawayland.desktop. The upstream short name
+plasma has no matching session in the Tumbleweed package.
+
+--- a/src/bootutil/bootutil.cpp
++++ b/src/bootutil/bootutil.cpp
+@@ -83,7 +83,7 @@
+     QTextStream stream(&file);
+     stream << "[Autologin]\n";
+     stream << "User=plasma-setup\n";
+-    stream << "Session=plasma\n";
++    stream << "Session=plasmawayland.desktop\n";
+     file.close();
+ 
+     removeEmptyAutologinEntry();

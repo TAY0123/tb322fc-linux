@@ -1,0 +1,6 @@
+{
+  "url": "https://github.com/linux-msm/hexagonrpc.git",
+  "commit": "598b591ae9da6a6cfe2ca5ea78998019ca6395ea",
+  "tree": "a730bca2b0c9f623cd1fde161efa9dcdccc658ee",
+  "patch": "patches/hexagonrpc.patch"
+}

@@ -1,0 +1,97 @@
+Subject: [PATCH] udev: scope hidraw hide rules to the original device path
+
+A disconnected source can leave a hide rule behind. If a UHID target later
+reuses its hidraw number, a KERNEL-only match hides the target from Steam.
+Match the original sysfs device path too, and reject an unresolved path.
+This does not change manager device discovery or removal handling.
+
+--- a/src/udev/device.rs
++++ b/src/udev/device.rs
+@@ -791,8 +791,14 @@
+         let match_rule = match subsystem.as_str() {
+             "hidraw" => {
+                 let name = self.name.clone();
++                // hidraw numbers are reused after disconnect. A stale rule must
++                // not hide a different device (including our own UHID target).
++                let path = &self.path;
++                if path.is_empty() {
++                    return None;
++                }
+                 Some(format!(
+-                    r#"ACTION=="add|change", SUBSYSTEMS=="{subsystem}", KERNEL=="{name}""#
++                    r#"ACTION=="add|change", SUBSYSTEM=="{subsystem}", KERNEL=="{name}", DEVPATH=="{path}""#
+                 ))
+             }
+             "input" => {
+@@ -829,3 +835,71 @@
+         Some(id.replace('\n', ""))
+     }
+ }
++
++#[cfg(test)]
++mod hide_rule_tests {
++    use super::Device;
++
++    fn hidraw(path: &str) -> Device {
++        Device {
++            name: "hidraw0".into(),
++            subsystem: "hidraw".into(),
++            path: path.into(),
++            ..Default::default()
++        }
++    }
++
++    // Evaluate the equality/glob predicates used by the generated hidraw rule.
++    fn matches(rule: &str, device: &Device, action: &str) -> bool {
++        rule.split(", ").all(|predicate| {
++            let (key, pattern) = predicate.split_once("==").unwrap();
++            let value = match key {
++                "ACTION" => action,
++                "SUBSYSTEM" | "SUBSYSTEMS" => &device.subsystem,
++                "KERNEL" => &device.name,
++                "DEVPATH" => &device.path,
++                _ => panic!("Unexpected hidraw match predicate: {key}"),
++            };
++            pattern
++                .trim_matches('"')
++                .split('|')
++                .any(|p| glob_match::glob_match(p, value))
++        })
++    }
++
++    #[test]
++    fn reused_hidraw_number_does_not_hide_virtual_target() {
++        let source =
++            hidraw("/devices/platform/usb1/1-1/1-1:1.3/0003:3537:1136.0002/hidraw/hidraw0");
++        let target = hidraw("/devices/virtual/misc/uhid/0003:28DE:12F0.0010/hidraw/hidraw0");
++        let rule = source.get_match_rule().unwrap();
++        assert!(matches(&rule, &source, "add"));
++        assert!(matches(&rule, &source, "change"));
++        assert!(!matches(&rule, &source, "remove"));
++        assert!(!matches(&rule, &target, "add"));
++        assert!(!matches(&rule, &target, "change"));
++    }
++
++    #[test]
++    fn old_rule_does_not_follow_reconnected_physical_device() {
++        let source =
++            hidraw("/devices/platform/usb1/1-1/1-1:1.3/0003:3537:1136.0002/hidraw/hidraw0");
++        let reconnected =
++            hidraw("/devices/platform/usb1/1-1/1-1:1.3/0003:3537:1136.0011/hidraw/hidraw0");
++        assert!(!matches(
++            &source.get_match_rule().unwrap(),
++            &reconnected,
++            "add"
++        ));
++        assert!(matches(
++            &reconnected.get_match_rule().unwrap(),
++            &reconnected,
++            "add"
++        ));
++    }
++
++    #[test]
++    fn missing_device_path_does_not_generate_a_node_only_rule() {
++        assert!(hidraw("").get_match_rule().is_none());
++    }
++}

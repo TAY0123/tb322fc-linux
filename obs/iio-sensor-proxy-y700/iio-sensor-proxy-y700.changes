@@ -1,0 +1,11 @@
+-------------------------------------------------------------------
+Sat Oct 31 16:48:00 UTC 2026 - h0cheung <hcheunh@gmail.com>
+
+- Build the Qualcomm SSC backend with libssc. Without it the TB322FC
+  ambient light sensor is missing from SensorProxy and KDE hides
+  automatic brightness.
+
+-------------------------------------------------------------------
+Sat Oct 31 09:00:00 UTC 2026 - h0cheung <hcheunh@gmail.com>
+
+- Initial Tumbleweed aarch64 build evaluation for TB322FC.

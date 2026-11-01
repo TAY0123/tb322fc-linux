@@ -1,0 +1,6 @@
+<services>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://codeload.github.com/OpenGamingCollective/gamescope-session-steam/tar.gz/82c45fc112775e3fa927d5c326c39b21f1761cc1</param>
+    <param name="filename">gamescope-session-steam-82c45fc112775e3fa927d5c326c39b21f1761cc1.tar.gz</param>
+  </service>
+</services>

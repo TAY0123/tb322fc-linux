@@ -1,0 +1,44 @@
+<services>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://raw.githubusercontent.com/mydanyi/armadaos-freedom/9788014a0293dc26745b000d02854ad88ef73e88/system_files/usr/libexec/armada/kshim-build-boot.py</param>
+    <param name="filename">kshim-build-boot.py</param>
+  </service>
+  <service name="tar_scm" mode="serveronly">
+    <param name="url">https://github.com/mydanyi/armadaos-freedom.git</param>
+    <param name="scm">git</param>
+    <param name="revision">244b74516d99d06cb0518609ce4b842ab278be8a</param>
+    <param name="subdir">devices/lenovo-tb323fu/boot/kshim-success-source</param>
+    <param name="filename">freedom-runtime</param>
+    <param name="version">244b74516d99d06cb0518609ce4b842ab278be8a</param>
+    <param name="submodules">disable</param>
+  </service>
+  <service name="tar_scm" mode="serveronly">
+    <param name="url">https://github.com/mydanyi/armadaos-freedom.git</param>
+    <param name="scm">git</param>
+    <param name="revision">244b74516d99d06cb0518609ce4b842ab278be8a</param>
+    <param name="subdir">packages/kshim-tools/vendor</param>
+    <param name="filename">freedom-tools</param>
+    <param name="version">244b74516d99d06cb0518609ce4b842ab278be8a</param>
+    <param name="submodules">disable</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://codeload.github.com/Project-Aloha/CrDK/tar.gz/b6c3335136b7f6b28271917de11e8f11982975fc</param>
+    <param name="filename">CrDK-b6c3335.tar.gz</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://codeload.github.com/picolibc/picolibc/tar.gz/f7edb0869e64b9d687f46961adeef7154921fe92</param>
+    <param name="filename">picolibc-f7edb0869e64b9d687f46961adeef7154921fe92.tar.gz</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://codeload.github.com/lvgl/lvgl/tar.gz/7f07a129e8d77f4984fff8e623fd5be18ff42e74</param>
+    <param name="filename">lvgl-7f07a129e8d77f4984fff8e623fd5be18ff42e74.tar.gz</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://codeload.github.com/sunflower2333/kShimC/tar.gz/82ce6eaa10c36e64cfd3f16799172d854f9a955b</param>
+    <param name="filename">kShimC-82ce6eaa10c36e64cfd3f16799172d854f9a955b.tar.gz</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://busybox.net/downloads/busybox-1.36.1.tar.bz2</param>
+    <param name="filename">busybox-1.36.1.tar.bz2</param>
+  </service>
+</services>

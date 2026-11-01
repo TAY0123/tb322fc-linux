@@ -1,0 +1,31 @@
+From: h0cheung <hcheunh@gmail.com>
+Subject: [PATCH] wayland: persist the current orientation when locking rotation
+
+KWin keeps the sensor transform separate from the manual transform it saves.
+When automatic rotation is disabled at an unchanged angle, sending only the
+policy leaves the old manual transform in kwinoutputconfig.json. The current
+session stays rotated, but the next login restores the old orientation.
+
+Send the selected transform together with the policy when switching to Never.
+This covers both Plasma Desktop and Plasma Mobile without a login script.
+
+diff --git a/backends/kwayland/waylandoutputdevice.cpp b/backends/kwayland/waylandoutputdevice.cpp
+index dc5b2d7..6d8c8b9 100644
+--- a/backends/kwayland/waylandoutputdevice.cpp
++++ b/backends/kwayland/waylandoutputdevice.cpp
+@@ -331,8 +331,13 @@ bool WaylandOutputDevice::setWlConfig(WaylandOutputManagement *management,
+         wlConfig->scale(object(), wl_fixed_from_double(output->scale()));
+     }
+ 
+-    // rotation
+-    if (toKScreenRotation(m_transform) != output->rotation()) {
++    // When locking rotation, persist the displayed orientation as the manual
++    // transform even if the sensor already rotated the output to that angle.
++    // Otherwise KWin restores an older manual orientation at the next login.
++    const bool lockingRotation = (output->capabilities() & Output::Capability::AutoRotation)
++        && m_autoRotatePolicy != static_cast<uint32_t>(Output::AutoRotatePolicy::Never)
++        && output->autoRotatePolicy() == Output::AutoRotatePolicy::Never;
++    if (toKScreenRotation(m_transform) != output->rotation() || lockingRotation) {
+         changed = true;
+         wlConfig->transform(object(), toKWaylandTransform(output->rotation()));
+     }

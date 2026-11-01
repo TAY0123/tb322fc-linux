@@ -1,0 +1,95 @@
+#!/usr/bin/python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+"""Install pinned, unmodified LSFG payloads from the owner's GitHub release."""
+import argparse
+import fcntl
+import hashlib
+import json
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import tempfile
+import urllib.request
+
+URL = 'https://github.com/h0cheung/tb322fc-linux/releases/download/repository-freedom-v2/lsfg-vk-dual-runtime-2.0.0-1-aarch64.pkg.tar.zst'
+SHA256 = '25398c7c76f4d24728e6fc5ac72687f5fff8ef233e452c1b9df0e10dcc6ab623'
+FILES = {
+    'usr/bin/lsfg-vk-cli': 0o755,
+    'usr/lib/liblsfg-vk-classic-arm64.so': 0o644,
+    'usr/lib/liblsfg-vk-layer-arm64.so': 0o644,
+    'usr/share/lsfg-vk/payloads/lsfg-vk_noui.zip': 0o644,
+    'usr/share/lsfg-vk/payloads/lsfg-vk-2.0.0.tar.xz': 0o644,
+    'usr/share/licenses/lsfg-vk-dual-runtime/classic-LICENSE.md': 0o644,
+    'usr/share/licenses/lsfg-vk-dual-runtime/v2-LICENSE.txt': 0o644,
+}
+STATE = Path('/var/lib/lsfg-vk')
+
+def digest(path):
+    with path.open('rb') as stream:
+        return hashlib.file_digest(stream, 'sha256').hexdigest()
+
+def verify(archive):
+    if digest(archive) != SHA256:
+        raise RuntimeError('LSFG archive SHA256 mismatch; nothing was installed')
+    names = set(subprocess.check_output(['bsdtar', '-tf', str(archive)], text=True).splitlines())
+    if not set(FILES) <= names:
+        raise RuntimeError('LSFG archive is missing required payload files')
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--archive', type=Path, help='Use an already downloaded, hash-verified archive')
+    parser.add_argument('--verify-only', action='store_true')
+    args = parser.parse_args()
+    if args.verify_only:
+        if not args.archive: parser.error('--verify-only requires --archive')
+        verify(args.archive)
+        print('Pinned LSFG archive and required members verified.')
+        return
+    if os.geteuid() != 0:
+        parser.error('Run sudo lsfg-runtime-setup once, or start the Decky service')
+    STATE.mkdir(mode=0o755, parents=True, exist_ok=True)
+    with (STATE / 'setup.lock').open('a') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        target = STATE / SHA256
+        manifest = target / 'files.json'
+        if manifest.exists():
+            hashes = json.loads(manifest.read_text())
+            if set(hashes) == set(FILES) and all((target / name).is_file() and digest(target / name) == expected for name, expected in hashes.items()):
+                current = STATE / 'current'
+                if current.is_symlink() and current.resolve() == target:
+                    return
+        with tempfile.TemporaryDirectory(prefix='.download-', dir=STATE) as temp:
+            temporary = Path(temp)
+            archive = args.archive
+            if archive is None:
+                archive = temporary / 'payload.pkg.tar.zst'
+                request = urllib.request.Request(URL, headers={'User-Agent': 'tb322fc-lsfg-bootstrap/1'})
+                with urllib.request.urlopen(request, timeout=60) as source, archive.open('wb') as output:
+                    shutil.copyfileobj(source, output)
+            verify(archive)
+            payload = temporary / 'payload'
+            payload.mkdir(mode=0o755)
+            hashes = {}
+            # Never extract archive paths, links, permissions or package hooks.
+            # Copy only these regular-file contents into paths we define.
+            for name, mode in FILES.items():
+                destination = payload / name
+                destination.parent.mkdir(mode=0o755, parents=True, exist_ok=True)
+                with destination.open('xb') as output:
+                    subprocess.run(['bsdtar', '-xOf', str(archive), name], stdout=output, check=True)
+                destination.chmod(mode)
+                hashes[name] = digest(destination)
+            (payload / 'files.json').write_text(json.dumps(hashes, indent=2) + '\n')
+            if target.exists():
+                # A corrupt previously installed copy is kept for inspection.
+                backup = STATE / (SHA256 + '.corrupt-' + str(os.getpid()))
+                target.rename(backup)
+            payload.rename(target)
+            link = STATE / ('.current-' + str(os.getpid()))
+            link.symlink_to(SHA256)
+            os.replace(link, STATE / 'current')
+        print('LSFG runtime installed. Original licenses are under /var/lib/lsfg-vk/current/usr/share/licenses/.')
+
+if __name__ == '__main__':
+    main()

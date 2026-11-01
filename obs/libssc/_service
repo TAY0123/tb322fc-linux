@@ -1,0 +1,6 @@
+<services>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://codeberg.org/DylanVanAssche/libssc/archive/54dd13e36d65c21263cf5b0f4a70c230a77b26bc.tar.gz</param>
+    <param name="filename">libssc-54dd13e36d65c21263cf5b0f4a70c230a77b26bc.tar.gz</param>
+  </service>
+</services>

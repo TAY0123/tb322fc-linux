@@ -1,0 +1,32 @@
+<link project="openSUSE:Factory" package="kernel-source" baserev="7b5d3577343df157429aec44af12a7ec" rev="7b5d3577343df157429aec44af12a7ec">
+  <patches>
+    <apply name="project.diff" />
+    <delete name="dtb-aarch64.changes" />
+    <delete name="dtb-aarch64.spec" />
+    <delete name="dtb-riscv64.changes" />
+    <delete name="dtb-riscv64.spec" />
+    <delete name="kernel-64kb.changes" />
+    <delete name="kernel-64kb.spec" />
+    <delete name="kernel-default.changes" />
+    <delete name="kernel-default.spec" />
+    <delete name="kernel-docs.changes" />
+    <delete name="kernel-docs.spec" />
+    <delete name="kernel-kvmsmall.changes" />
+    <delete name="kernel-kvmsmall.spec" />
+    <delete name="kernel-lpae.changes" />
+    <delete name="kernel-lpae.spec" />
+    <delete name="kernel-obs-build.changes" />
+    <delete name="kernel-obs-build.spec" />
+    <delete name="kernel-obs-qa.changes" />
+    <delete name="kernel-obs-qa.spec" />
+    <delete name="kernel-pae.changes" />
+    <delete name="kernel-pae.spec" />
+    <delete name="kernel-syms.changes" />
+    <delete name="kernel-vanilla.changes" />
+    <delete name="kernel-vanilla.spec" />
+    <delete name="kernel-zfcpdump.changes" />
+    <delete name="kernel-zfcpdump.spec" />
+    <delete name="linux-7.3.tar.sign" />
+    <delete name="linux-7.3.tar.xz" />
+  </patches>
+</link>

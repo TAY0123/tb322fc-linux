@@ -1,0 +1,22 @@
+<services>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://raw.githubusercontent.com/mydanyi/armadaos-freedom/9788014a0293dc26745b000d02854ad88ef73e88/system_files/usr/libexec/armada/powerbuttond</param>
+    <param name="filename">powerbuttond</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://raw.githubusercontent.com/mydanyi/armadaos-freedom/9788014a0293dc26745b000d02854ad88ef73e88/system_files/usr/lib/armada/input-lib</param>
+    <param name="filename">input-lib</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://raw.githubusercontent.com/mydanyi/armadaos-freedom/9788014a0293dc26745b000d02854ad88ef73e88/system_files/usr/lib/systemd/user/armada-powerbuttond.service</param>
+    <param name="filename">armada-powerbuttond.service</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://raw.githubusercontent.com/mydanyi/armadaos-freedom/9788014a0293dc26745b000d02854ad88ef73e88/system_files/usr/lib/systemd/user/gamescope-session-plus@steam.service.d/10-armada-powerbuttond.conf</param>
+    <param name="filename">10-armada-powerbuttond.conf</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://raw.githubusercontent.com/mydanyi/armadaos-freedom/9788014a0293dc26745b000d02854ad88ef73e88/system_files/usr/lib/systemd/system-sleep/50-armada-powerbutton-suspend</param>
+    <param name="filename">50-armada-powerbutton-suspend</param>
+  </service>
+</services>

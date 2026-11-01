@@ -1,0 +1,28 @@
+{
+  "sources": [
+    {
+      "file": "DirectXShaderCompiler.tar.gz",
+      "kind": "archive",
+      "dest": "DirectXShaderCompiler.tar.gz",
+      "sha256": "c48c223df13ba425fd9beda9843754defbcd379a3811a6a0e590110be57168c7"
+    },
+    {
+      "file": "DirectX-Headers.tar.gz",
+      "kind": "archive",
+      "dest": "DirectX-Headers.tar.gz",
+      "sha256": "b5a4b6d8806ff7f29f19879f83d015dbe8740676d4ca0b48647a789cc7773c4e"
+    },
+    {
+      "file": "SPIRV-Headers.tar.gz",
+      "kind": "archive",
+      "dest": "SPIRV-Headers.tar.gz",
+      "sha256": "232899f1ad4104fb5bc377b94596c7621575eee62ad9a9e8f929b63a7dd8a7ad"
+    },
+    {
+      "file": "SPIRV-Tools.tar.gz",
+      "kind": "archive",
+      "dest": "SPIRV-Tools.tar.gz",
+      "sha256": "05d8af89737bde57571c48dbd36714c9f520a69623e14de72c3be6b600e277d6"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "sources": [
+    {
+      "file": "60-armada-usb-autosuspend.rules",
+      "kind": "file",
+      "dest": "60-armada-usb-autosuspend.rules",
+      "sha256": "6647af3dcbc8b12b41606e05f2e62e2a8a95f4c14e94dd727c449a38faa55212"
+    }
+  ]
+}

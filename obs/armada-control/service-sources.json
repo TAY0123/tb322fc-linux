@@ -1,0 +1,34 @@
+{
+  "sources": [
+    {
+      "file": "armada-control.upstream",
+      "kind": "file",
+      "dest": "armada-control.upstream",
+      "sha256": "b22e00c35ea576d00a21c9cb296d91dccef8e566c6110e21d613f8b9f7320939"
+    },
+    {
+      "file": "armada-game-launch",
+      "kind": "file",
+      "dest": "armada-game-launch",
+      "sha256": "6f9131f9db3b340c5be2d2545d988072cb50ebeec9348431f13508ab27e703ca"
+    },
+    {
+      "file": "armada_game_tweaks.py",
+      "kind": "file",
+      "dest": "armada_game_tweaks.py",
+      "sha256": "fef819d936e072fb6c71a0d2e2a139e5c2ff9ccc35e3b2ff8df789096e6f7443"
+    },
+    {
+      "file": "armada_turnip.py",
+      "kind": "file",
+      "dest": "armada_turnip.py",
+      "sha256": "ca4d3ea19aeff9cda156a878d26328c60bc6f969d1ef4ff649bb6a327a8a4fc9"
+    },
+    {
+      "file": "env-presets.json",
+      "kind": "file",
+      "dest": "env-presets.json",
+      "sha256": "f26d1b9cccbc65142f106c6c94d5e1814f43721b7b30e57817fea6242087c5cc"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+<services>
+  <service name="node_modules" mode="serveronly">
+    <param name="input">npm-dependencies.json</param>
+    <param name="cpio">node_modules.obscpio</param>
+    <param name="output">node_modules.spec.inc</param>
+    <param name="legacy-container">true</param>
+    <param name="source-offset">10000</param>
+  </service>
+</services>

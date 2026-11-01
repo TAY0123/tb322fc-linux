@@ -1,0 +1,67 @@
+--- inputplumber.spec.orig
++++ inputplumber.spec
+@@ -15,9 +15,9 @@
+ # Please submit bugfixes or comments via https://bugs.opensuse.org/
+ #
+ 
+-Name:           inputplumber
++Name:           inputplumber-g9-2026
+ Version:        0.83.0
+-Release:        0%{?dist}
++Release:        2
+ Summary:        Input router and remapper daemon for Linux
+ # spec-cleaner deviation: upstream Cargo.toml declares GPL-3.0-or-later,
+ # not GPL-3.0-only as the mechanical rewrite suggested.
+@@ -25,6 +25,9 @@
+ URL:            https://github.com/ShadowBlip/InputPlumber
+ Source0:        InputPlumber-%{version}.tar.xz
+ Source1:        vendor.tar.zst
++Source2:        legion_g9.rs
++Provides:       inputplumber = %{version}
++Conflicts:      inputplumber
+ # PATCH-FIX-OPENSUSE polkit-rules.patch -- grant access to inputplumber group only, drop debug logging
+ Patch0:         polkit-rules.patch
+ BuildRequires:  cargo
+@@ -42,6 +45,9 @@
+ Conflicts:      python3-hhd
+ Provides:       InputPlumber
+ 
++Patch900: 0001-add-legion-g9-rumble.patch
++Patch901: 0002-scope-hidraw-hide-rules-to-device-path.patch
++
+ %description
+ InputPlumber is a input routing and control daemon for Linux.
+ It can be used to combine any number of input devices (like gamepads,
+@@ -50,15 +56,21 @@
+ 
+ %prep
+ %autosetup -p1 -a1 -n InputPlumber-%{version}
++install -m644 %{SOURCE2} src/input/source/hidraw/legion_g9.rs
+ 
+ %build
+-%make_build build
++export RUSTFLAGS="${RUSTFLAGS:-} %{?tb322fc_rustflags}"
++cargo build --frozen --release --bin inputplumber
+ 
+ %install
+ make install PREFIX=%{buildroot}%{_prefix} NO_RELOAD=true
++# TB322FC uses SSC sensor bridges and G9 HID, not IIO software triggers.
++# Do not generate a kmod dependency that pulls in an unrelated generic kernel.
++rm -v %{buildroot}%{_modulesloaddir}/inputplumber-hrtimer.conf
+ 
+ %check
+-%make_build test
++export RUSTFLAGS="${RUSTFLAGS:-} %{?tb322fc_rustflags}"
++cargo test --frozen --release --lib --bin inputplumber
+ 
+ %pre
+ # spec-cleaner deviation: scriptlet macros below stay in bare form
+@@ -83,8 +95,6 @@
+ %dir %{_udevhwdbdir}
+ %{_udevhwdbdir}/*.hwdb
+ %{_udevrulesdir}/*.rules
+-%dir %{_modulesloaddir}
+-%{_modulesloaddir}/*.conf
+ %dir %{_datadir}/inputplumber
+ %dir %{_datadir}/inputplumber/capability_maps
+ %{_datadir}/inputplumber/capability_maps/*.yaml

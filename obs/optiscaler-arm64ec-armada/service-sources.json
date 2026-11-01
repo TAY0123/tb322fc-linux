@@ -1,0 +1,220 @@
+{
+  "sources": [
+    {
+      "file": "Sloptiscaler-f80e4da339cd4624212fd0546922571fe01205c1.tar.gz",
+      "kind": "git",
+      "dest": "Sloptiscaler",
+      "sha256": "475022b26aeafe906e9cbd15d001a374ff8b45e4a0e84acf85b6cdf09397a459"
+    },
+    {
+      "file": "simpleini-6048871ea9ee0ec24be5bd099d161a10567d7dc2.tar.gz",
+      "kind": "git",
+      "dest": "simpleini",
+      "sha256": "8478a479be6bbfd5959a99877289af357b67133fcdee7543e42f59b1a2618e0f"
+    },
+    {
+      "file": "unordered_dense-73f3cbb237e84d483afafc743f1f14ec53e12314.tar.gz",
+      "kind": "git",
+      "dest": "unordered_dense",
+      "sha256": "16188ed4804a670f6b00637a53e135190668dddc12b10f5233e20b403b9df9e2"
+    },
+    {
+      "file": "xess-8fe81bdbbaf00b3c1b733fd0d830c333dc84e6f0.tar.gz",
+      "kind": "git",
+      "dest": "xess",
+      "sha256": "8b24422e25b8da92cce4e14d9e4217627df920631f0d8e1408495dd8d04eb986"
+    },
+    {
+      "file": "Vulkan-Headers-d64e9e156ac818c19b722ca142230b68e3daafe3.tar.gz",
+      "kind": "git",
+      "dest": "vulkan",
+      "sha256": "2723af23bf133b34f3cfc5cfa6303c9f2c3f2c9003c70a2d37d845fe840793bd"
+    },
+    {
+      "file": "spdlog-faa0a7a9c5a3550ed5461fab7d8e31c37fd1a2ef.tar.gz",
+      "kind": "git",
+      "dest": "spdlog",
+      "sha256": "e471675f9d6eb34caa119617c144f5d34cde4dff95c7d1902d189f027b916a5f"
+    },
+    {
+      "file": "magic_enum-a733a2ea665ca5d72b7270f0334bf2e7b82bd0cc.tar.gz",
+      "kind": "git",
+      "dest": "magic_enum",
+      "sha256": "18a3c7d86bc5253734b53c6d3222d3a8a1b88305096ee6fa82c4bb6f2dbb07da"
+    },
+    {
+      "file": "nvapi-9b181ea572f680327fe01a14a0f1f41c78034104.tar.gz",
+      "kind": "git",
+      "dest": "nvapi",
+      "sha256": "538177993bc5ae3aef52ea4932f1f25ee53afa56da38e2c6aa23087873340064"
+    },
+    {
+      "file": "DirectXMath-b758b4a5669aca3542b4bf2b0cbc334696edd302.tar.gz",
+      "kind": "git",
+      "dest": "DirectXMath",
+      "sha256": "28797a39b60641d18b1ca42458fb093c04b5b013abdbef320b75d2ef825082da"
+    },
+    {
+      "file": "Detours-adb07604aa56508448b95bf037c2a6d0d3b6831a.tar.gz",
+      "kind": "git",
+      "dest": "Detours",
+      "sha256": "42125d318f607cded3332bb61bb7bebac8a58a57e46ced6de573610f1d4cedba"
+    },
+    {
+      "file": "freetype-42608f77f20749dd6ddc9e0536788eaad70ea4b5.tar.gz",
+      "kind": "git",
+      "dest": "freetype",
+      "sha256": "68ce87bb59ea209eb7350f41a94a27519ce16b37011b475a1e62d4abee154b66"
+    },
+    {
+      "file": "0001-sgsr2-weight-guard.patch",
+      "kind": "file",
+      "dest": "0001-sgsr2-weight-guard.patch"
+    },
+    {
+      "file": "0002-sgsr2-display-res-motion-vectors.patch",
+      "kind": "file",
+      "dest": "0002-sgsr2-display-res-motion-vectors.patch"
+    },
+    {
+      "file": "0003-asr-d3d12-backend.patch",
+      "kind": "file",
+      "dest": "0003-asr-d3d12-backend.patch"
+    },
+    {
+      "file": "0004-asr-upscaler.patch",
+      "kind": "file",
+      "dest": "0004-asr-upscaler.patch"
+    },
+    {
+      "file": "0005-fsr2-shaders-with-linux-dxc.patch",
+      "kind": "file",
+      "dest": "0005-fsr2-shaders-with-linux-dxc.patch"
+    },
+    {
+      "file": "0006-sgsr2-spirv-with-linux-dxc.patch",
+      "kind": "file",
+      "dest": "0006-sgsr2-spirv-with-linux-dxc.patch"
+    },
+    {
+      "file": "accuracy-super-resolution-generic-library-0501f490bd9946a2e1806b5363d7ab8a9a6a5e0a.tar.gz",
+      "kind": "git",
+      "dest": "asr",
+      "sha256": "4be2c6387eaab43213be919c49b8b40a0af237311172632ca9420064cd2e2e08"
+    },
+    {
+      "file": "FidelityFX-FSR2-1680d1edd5c034f88ebbbb793d8b88f8842cf804.tar.gz",
+      "kind": "git",
+      "dest": "FidelityFX-FSR2",
+      "sha256": "19df8378ea882d437a6d61eeaa1c50b7e091fe409dd3029be8f0d819c7a89d75"
+    },
+    {
+      "file": "ffx-ffx_api.h",
+      "kind": "file",
+      "dest": "ffx-ffx_api.h",
+      "sha256": "408b4203545e8299ed188fbb1d9ddfe0932b73ea6e8b14fe10edcf1f45771561"
+    },
+    {
+      "file": "ffx-ffx_api.hpp",
+      "kind": "file",
+      "dest": "ffx-ffx_api.hpp",
+      "sha256": "42470189c0241feca12eed959cf90ade15806bb9ecc578b65f8c20ca9365c34d"
+    },
+    {
+      "file": "ffx-ffx_api_loader.h",
+      "kind": "file",
+      "dest": "ffx-ffx_api_loader.h",
+      "sha256": "7be51b7bf1e640b84c0c7f22a9db50a6816debce3755b51224e56c89501659c3"
+    },
+    {
+      "file": "ffx-ffx_api_types.h",
+      "kind": "file",
+      "dest": "ffx-ffx_api_types.h",
+      "sha256": "dee2782813d22047c068e0fb27d1347324f8ce79d280a4672848b3b294cb12fe"
+    },
+    {
+      "file": "ffx-ffx_framegeneration.h",
+      "kind": "file",
+      "dest": "ffx-ffx_framegeneration.h",
+      "sha256": "344936dccf49267d4421d1d74dc6db617d0a83c5a9f5991841325e812a38f127"
+    },
+    {
+      "file": "ffx-ffx_framegeneration.hpp",
+      "kind": "file",
+      "dest": "ffx-ffx_framegeneration.hpp",
+      "sha256": "30225b7c0596cff734b7c1fc5217d5ac39ccc629bcccb3bcdeeadbcac317fbcd"
+    },
+    {
+      "file": "ffx-ffx_upscale.h",
+      "kind": "file",
+      "dest": "ffx-ffx_upscale.h",
+      "sha256": "1155bcdcea9c10e6a95507bc9422ca062a853ac84250f0b09a637a66836b3ac1"
+    },
+    {
+      "file": "ffx-ffx_upscale.hpp",
+      "kind": "file",
+      "dest": "ffx-ffx_upscale.hpp",
+      "sha256": "6451754c2539a7e991429a7bd8365bb848f51abebad1982715f345989cc0a234"
+    },
+    {
+      "file": "ffx-dx12-ffx_api_dx12.h",
+      "kind": "file",
+      "dest": "ffx-dx12-ffx_api_dx12.h",
+      "sha256": "215804fba316acb81d2c463b6bbce36c53cc63465c15b8c9858554c8111fae24"
+    },
+    {
+      "file": "ffx-dx12-ffx_api_dx12.hpp",
+      "kind": "file",
+      "dest": "ffx-dx12-ffx_api_dx12.hpp",
+      "sha256": "ab1cef2b97d2e3fb3294ed59d1e26ecf45d4d0483aa001ced37e7ddbd1be9dd6"
+    },
+    {
+      "file": "ffx-vk-ffx_api_vk.h",
+      "kind": "file",
+      "dest": "ffx-vk-ffx_api_vk.h",
+      "sha256": "a50a8d5ff5689a10a6ce378f2df5569fd880c89ec46e8356aaf35eb40512edd9"
+    },
+    {
+      "file": "ffx-vk-ffx_api_vk.hpp",
+      "kind": "file",
+      "dest": "ffx-vk-ffx_api_vk.hpp",
+      "sha256": "b4eab5ed043de7590c786c1904eba7064449ee8a8c9e302eb6363ccc7035172e"
+    }
+  ],
+  "copies": [
+    [
+      "simpleini",
+      "Sloptiscaler/external/simpleini"
+    ],
+    [
+      "unordered_dense",
+      "Sloptiscaler/external/unordered_dense"
+    ],
+    [
+      "xess",
+      "Sloptiscaler/external/xess"
+    ],
+    [
+      "vulkan",
+      "Sloptiscaler/external/vulkan"
+    ],
+    [
+      "spdlog",
+      "Sloptiscaler/external/spdlog"
+    ],
+    [
+      "magic_enum",
+      "Sloptiscaler/external/magic_enum"
+    ],
+    [
+      "nvapi",
+      "Sloptiscaler/external/nvapi"
+    ]
+  ],
+  "remove_suffixes": [
+    ".dll",
+    ".exe",
+    ".lib",
+    ".pdb"
+  ]
+}

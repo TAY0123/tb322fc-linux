@@ -1,0 +1,119 @@
+--- a/src/input/source/hidraw.rs
++++ b/src/input/source/hidraw.rs
+@@ -1,4 +1,5 @@
+ pub mod ayaneo_haptics;
++pub mod legion_g9;
+ pub mod blocked;
+ pub mod dualsense;
+ pub mod flydigi_vader_4_pro;
+@@ -32,6 +33,7 @@
+ 
+ use self::{
+     ayaneo_haptics::AyaneoHaptics,
++    legion_g9::LegionG9Rumble,
+     blocked::BlockedHidrawDevice,
+     dualsense::DualSenseController,
+     flydigi_vader_4_pro::Vader4Pro,
+@@ -61,6 +63,7 @@
+ /// List of available drivers
+ enum DriverType {
+     AyaneoHaptics,
++    LegionG9Rumble,
+     Blocked,
+     DualSense,
+     Fts3528Touchscreen,
+@@ -90,6 +93,7 @@
+ #[derive(Debug)]
+ pub enum HidRawDevice {
+     AyaneoHaptics(SourceDriver<AyaneoHaptics>),
++    LegionG9Rumble(SourceDriver<LegionG9Rumble>),
+     Blocked(SourceDriver<BlockedHidrawDevice>),
+     DualSense(SourceDriver<DualSenseController>),
+     Fts3528Touchscreen(SourceDriver<Fts3528Touchscreen>),
+@@ -118,6 +122,7 @@
+     fn get_device_ref(&self) -> DeviceInfoRef<'_> {
+         match self {
+             HidRawDevice::AyaneoHaptics(source_driver) => source_driver.info_ref(),
++            HidRawDevice::LegionG9Rumble(source_driver) => source_driver.info_ref(),
+             HidRawDevice::Blocked(source_driver) => source_driver.info_ref(),
+             HidRawDevice::DualSense(source_driver) => source_driver.info_ref(),
+             HidRawDevice::Fts3528Touchscreen(source_driver) => source_driver.info_ref(),
+@@ -146,6 +151,7 @@
+     fn get_id(&self) -> String {
+         match self {
+             HidRawDevice::AyaneoHaptics(source_driver) => source_driver.get_id(),
++            HidRawDevice::LegionG9Rumble(source_driver) => source_driver.get_id(),
+             HidRawDevice::Blocked(source_driver) => source_driver.get_id(),
+             HidRawDevice::DualSense(source_driver) => source_driver.get_id(),
+             HidRawDevice::Fts3528Touchscreen(source_driver) => source_driver.get_id(),
+@@ -174,6 +180,7 @@
+     fn client(&self) -> super::client::SourceDeviceClient {
+         match self {
+             HidRawDevice::AyaneoHaptics(source_driver) => source_driver.client(),
++            HidRawDevice::LegionG9Rumble(source_driver) => source_driver.client(),
+             HidRawDevice::Blocked(source_driver) => source_driver.client(),
+             HidRawDevice::DualSense(source_driver) => source_driver.client(),
+             HidRawDevice::Fts3528Touchscreen(source_driver) => source_driver.client(),
+@@ -202,6 +209,7 @@
+     async fn run(self) -> Result<(), Box<dyn Error>> {
+         match self {
+             HidRawDevice::AyaneoHaptics(source_driver) => source_driver.run().await,
++            HidRawDevice::LegionG9Rumble(source_driver) => source_driver.run().await,
+             HidRawDevice::Blocked(source_driver) => source_driver.run().await,
+             HidRawDevice::DualSense(source_driver) => source_driver.run().await,
+             HidRawDevice::Fts3528Touchscreen(source_driver) => source_driver.run().await,
+@@ -230,6 +238,7 @@
+     fn get_capabilities(&self) -> Result<Vec<Capability>, InputError> {
+         match self {
+             HidRawDevice::AyaneoHaptics(source_driver) => source_driver.get_capabilities(),
++            HidRawDevice::LegionG9Rumble(source_driver) => source_driver.get_capabilities(),
+             HidRawDevice::Blocked(source_driver) => source_driver.get_capabilities(),
+             HidRawDevice::DualSense(source_driver) => source_driver.get_capabilities(),
+             HidRawDevice::Fts3528Touchscreen(source_driver) => source_driver.get_capabilities(),
+@@ -258,6 +267,7 @@
+     fn get_output_capabilities(&self) -> Result<Vec<OutputCapability>, OutputError> {
+         match self {
+             HidRawDevice::AyaneoHaptics(source_driver) => source_driver.get_output_capabilities(),
++            HidRawDevice::LegionG9Rumble(source_driver) => source_driver.get_output_capabilities(),
+             HidRawDevice::Blocked(source_driver) => source_driver.get_output_capabilities(),
+             HidRawDevice::DualSense(source_driver) => source_driver.get_output_capabilities(),
+             HidRawDevice::Fts3528Touchscreen(source_driver) => {
+@@ -296,6 +306,7 @@
+     fn get_device_path(&self) -> String {
+         match self {
+             HidRawDevice::AyaneoHaptics(source_driver) => source_driver.get_device_path(),
++            HidRawDevice::LegionG9Rumble(source_driver) => source_driver.get_device_path(),
+             HidRawDevice::Blocked(source_driver) => source_driver.get_device_path(),
+             HidRawDevice::DualSense(source_driver) => source_driver.get_device_path(),
+             HidRawDevice::Fts3528Touchscreen(source_driver) => source_driver.get_device_path(),
+@@ -336,6 +347,17 @@
+ 
+         match driver_type {
+             DriverType::Unknown => Err("No driver for hidraw interface found".into()),
++            DriverType::LegionG9Rumble => {
++                let options = SourceDriverOptions {
++                    poll_rate: Duration::from_millis(10),
++                    buffer_size: 2048,
++                };
++                let device = LegionG9Rumble::new(device_info.clone())?;
++                let source_device = SourceDriver::new_with_options(
++                    composite_device, device, device_info.into(), options, conf,
++                );
++                Ok(Self::LegionG9Rumble(source_device))
++            }
+             DriverType::AyaneoHaptics => {
+                 let device = AyaneoHaptics::new(device_info.clone())?;
+                 let source_device =
+@@ -676,6 +698,12 @@
+         let vid = device.id_vendor();
+         let pid = device.id_product();
+         let iid = device.interface_number();
++
++        // G9 2026: only the vendor interface, never its gamepad report interface.
++        if vid == legion_g9::VID && pid == legion_g9::PID && iid == legion_g9::INTERFACE {
++            log::info!("Detected Legion G9 2026 rumble interface");
++            return DriverType::LegionG9Rumble;
++        }
+ 
+         // AYANEO DirectInput controller haptics
+         if vid == ayaneo_haptics::VID && pid == ayaneo_haptics::PID {

@@ -1,0 +1,62 @@
+--- msime.spec.orig
++++ msime.spec
+@@ -25,7 +25,7 @@
+ 
+ Name:           msime
+ Version:        0.15.0
+-Release:        1%{?dist}
++Release:        0
+ Summary:        Metasequoia IME (水杉输入法): Chinese input method for Fcitx5 and IBus
+ # 本项目代码为 GPL-3.0-only，其中输入引擎（crates/engine、crates/path-trust）是 MPL-2.0；其余是随包的第三方代码与数据：Rust crate 与 npm 包（rust-crates-NOTICES.txt、frontend-npm-NOTICES.txt 逐个列出）、sherpa-onnx 与 ONNX Runtime、nlohmann/json、Wayland 协议代码、手写模型、方言词库、离线释义和 resources/licenses 下的各项数据。
+ License:        GPL-3.0-only AND Apache-2.0 AND Apache-2.0 WITH LLVM-exception AND MIT AND BSD-3-Clause AND BSD-2-Clause AND HPND AND LGPL-2.1-or-later AND LGPL-3.0-only AND CC-BY-3.0 AND CC-BY-4.0 AND CC-BY-SA-4.0 AND MPL-2.0 AND WTFPL AND Unicode-3.0 AND ISC AND Zlib
+@@ -34,6 +34,7 @@
+ Source1:        %{url}/releases/download/linux-sources/msime-%{version}-vendor.tar.xz
+ # OBS 自动读取与包同名的 rpmlintrc；列为 Source 让它也进 .src.rpm。
+ Source99:       msime-rpmlintrc
++Patch0:         msime-ibus-pinyin-alias.patch
+ 
+ # 语音运行库只为这两个架构钉住了上游构建（resources/voice-runtime.lock.json）。
+ ExclusiveArch:  x86_64 aarch64
+@@ -72,6 +73,8 @@
+ %if 0%{?suse_version}
+ BuildRequires:  procps
+ BuildRequires:  dbus-1
++# Pango 画布测试需要实际字体；无字体时不同字号都退回等宽缺字框。
++BuildRequires:  google-noto-sans-fonts
+ %else
+ BuildRequires:  procps-ng
+ BuildRequires:  dbus-daemon
+@@ -100,6 +103,8 @@
+ %endif
+ # GitHub 发布页上 CPack 打的 RPM 叫 msime-linux，文件与本包完全重合；装本包时把它替换掉。
+ Provides:       msime-linux = %{version}-%{release}
++# 两个包都会注册 Steam 请求的 pinyin 引擎，不能同时安装。
++Conflicts:      ibus-pinyin
+ Obsoletes:      msime-linux < %{version}-%{release}
+ 
+ %description
+@@ -110,7 +115,7 @@
+ included; msime-linux-setup --download fetches them on first use.
+ 
+ %prep
+-%autosetup -n msime-%{version} -a 1
++%autosetup -p1 -n msime-%{version} -a 1
+ mv msime-%{version}-vendor vendor
+ # 有些 crate 的 .rs 带可执行位，首行又是 `#![...]`；它们随 debugsource 打包时 brp-mangle-shebangs 当成坏的 shebang 报错。Cargo 的校验只看内容，不看权限。
+ find vendor/cargo -type f -name '*.rs' -perm /111 -exec chmod a-x {} +
+@@ -118,6 +123,7 @@
+ %build
+ # openSUSE 的 rpm 不一定定义 set_build_flags，这时退回 optflags。
+ %{?set_build_flags}
++export RUSTFLAGS="${RUSTFLAGS:-} %{?tb322fc_rustflags}"
+ export CFLAGS="${CFLAGS:-%{optflags}}" CXXFLAGS="${CXXFLAGS:-%{optflags}}"
+ export CARGO_HOME="$PWD/.cargo-home" CARGO_NET_OFFLINE=true MSIME_OPENCC_SOURCE_DIR="$PWD/vendor/opencc" PYTHONDONTWRITEBYTECODE=1
+ %if 0%{?suse_version}
+@@ -157,6 +163,7 @@
+   -DMSIME_EDITION=full \
+   -DMSIME_ENABLE_PACKAGING=ON \
+   -DMSIME_ENABLE_FCITX5=ON \
++  -DMSIME_IBUS_PINYIN_ALIAS=ON \
+   -DMSIME_PACKAGE_VERSION=%{version} \
+   -DMSIME_HOST_LIBRARY="$PWD/target/release/libmsime_host_api.so" \
+   -DMSIME_MCP_BINARY="$PWD/target/release/msime-mcp" \

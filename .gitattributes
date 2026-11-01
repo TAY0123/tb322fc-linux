@@ -1,2 +1,4 @@
 patches/**/*.patch -whitespace
 packages/**/*.patch -whitespace
+obs/**/*.patch -whitespace
+obs/**/*.diff -whitespace

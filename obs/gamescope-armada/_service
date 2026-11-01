@@ -1,0 +1,46 @@
+<services>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://codeload.github.com/OpenGamingCollective/gamescope/tar.gz/afd6eac6e1b5045119831b63854bad68ec4fd92c</param>
+    <param name="filename">gamescope-afd6eac6e1b5045119831b63854bad68ec4fd92c.tar.gz</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://codeload.github.com/Joshua-Ashton/GamescopeShaders/tar.gz/359e480c548fc3a38a612da2de314980c8329983</param>
+    <param name="filename">GamescopeShaders-359e480c548fc3a38a612da2de314980c8329983.tar.gz</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://codeload.github.com/Joshua-Ashton/reshade/tar.gz/696b14cd6006ae9ca174e6164450619ace043283</param>
+    <param name="filename">reshade-696b14cd6006ae9ca174e6164450619ace043283.tar.gz</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://codeload.github.com/Joshua-Ashton/vkroots/tar.gz/5106d8a0df95de66cc58dc1ea37e69c99afc9540</param>
+    <param name="filename">vkroots-5106d8a0df95de66cc58dc1ea37e69c99afc9540.tar.gz</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://codeload.github.com/KhronosGroup/SPIRV-Headers/tar.gz/d790ced752b5bfc06b6988baadef6eb2d16bdf96</param>
+    <param name="filename">SPIRV-Headers-d790ced752b5bfc06b6988baadef6eb2d16bdf96.tar.gz</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://codeload.github.com/ValveSoftware/openvr/tar.gz/ff87f683f41fe26cc9353dd9d9d7028357fd8e1a</param>
+    <param name="filename">openvr-ff87f683f41fe26cc9353dd9d9d7028357fd8e1a.tar.gz</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://gitlab.freedesktop.org/emersion/libdisplay-info/-/archive/c67a3e9bedb05ab61c7443704a1a107e76254595/libdisplay-info-c67a3e9bedb05ab61c7443704a1a107e76254595.tar.gz</param>
+    <param name="filename">libdisplay-info-c67a3e9bedb05ab61c7443704a1a107e76254595.tar.gz</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://gitlab.freedesktop.org/emersion/libliftoff/-/archive/8b08dc1c14fd019cc90ddabe34ad16596b0691f4/libliftoff-8b08dc1c14fd019cc90ddabe34ad16596b0691f4.tar.gz</param>
+    <param name="filename">libliftoff-8b08dc1c14fd019cc90ddabe34ad16596b0691f4.tar.gz</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://gitlab.freedesktop.org/wlroots/wlroots/-/archive/d783533489e1f75d6886c2ab5c5960090ef268f8/wlroots-d783533489e1f75d6886c2ab5c5960090ef268f8.tar.gz</param>
+    <param name="filename">wlroots-d783533489e1f75d6886c2ab5c5960090ef268f8.tar.gz</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://codeload.github.com/g-truc/glm/tar.gz/0af55ccecd98d4e5a8d1fad7de25ba429d60e863</param>
+    <param name="filename">glm-0af55ccecd98d4e5a8d1fad7de25ba429d60e863.tar.gz</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://codeload.github.com/nothings/stb/tar.gz/5736b15f7ea0ffb08dd38af21067c314d6a3aae9</param>
+    <param name="filename">stb-5736b15f7ea0ffb08dd38af21067c314d6a3aae9.tar.gz</param>
+  </service>
+</services>

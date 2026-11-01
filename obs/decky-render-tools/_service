@@ -1,0 +1,37 @@
+<services>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://raw.githubusercontent.com/kettlelinux/kettlelinux/91e3b5cfe90925d469430fc915101df5579b4e68/packages/kettle-decky-plugins/game-settings/py_modules/upscaling.py</param>
+    <param name="filename">upscaling.py</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://raw.githubusercontent.com/kettlelinux/kettlelinux/91e3b5cfe90925d469430fc915101df5579b4e68/packages/kettle-decky-plugins/game-settings/src/upscaling.tsx</param>
+    <param name="filename">upscaling.tsx</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://raw.githubusercontent.com/kettlelinux/kettlelinux/91e3b5cfe90925d469430fc915101df5579b4e68/packages/kettle-decky-plugins/shared/steamlib.py</param>
+    <param name="filename">steamlib.py</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://raw.githubusercontent.com/kettlelinux/kettlelinux/91e3b5cfe90925d469430fc915101df5579b4e68/packages/kettle-decky-plugins/shared/GamePicker.tsx</param>
+    <param name="filename">GamePicker.tsx</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://raw.githubusercontent.com/kettlelinux/kettlelinux/91e3b5cfe90925d469430fc915101df5579b4e68/packages/kettle-decky-plugins/shared/launchOptions.ts</param>
+    <param name="filename">launchOptions.ts</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://raw.githubusercontent.com/kettlelinux/kettlelinux/91e3b5cfe90925d469430fc915101df5579b4e68/packages/kettle-decky-plugins/LICENSE</param>
+    <param name="filename">LICENSE.upstream</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://raw.githubusercontent.com/kettlelinux/kettlelinux/91e3b5cfe90925d469430fc915101df5579b4e68/packages/kettle-decky-plugins/shared/Tabs.tsx</param>
+    <param name="filename">Tabs.tsx</param>
+  </service>
+  <service name="node_modules" mode="serveronly">
+    <param name="input">npm-dependencies.json</param>
+    <param name="cpio">node_modules.obscpio</param>
+    <param name="output">node_modules.spec.inc</param>
+    <param name="legacy-container">true</param>
+    <param name="source-offset">10000</param>
+  </service>
+</services>

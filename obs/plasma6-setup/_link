@@ -1,0 +1,5 @@
+<link project="KDE:Frameworks" package="plasma6-setup" rev="b65d08ed893f53332785d5888ad4536b" baserev="b65d08ed893f53332785d5888ad4536b">
+  <patches>
+    <apply name="project.diff" />
+  </patches>
+</link>

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<services>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://cdn.kernel.org/pub/linux/kernel/v7.x/linux-7.2.6.tar.xz</param>
+    <param name="filename">linux-7.2.6.tar.xz</param>
+  </service>
+</services>

@@ -1,0 +1,25 @@
+--- iio-sensor-proxy.spec.orig
++++ iio-sensor-proxy.spec
+@@ -31,10 +31,13 @@
+ BuildRequires:  pkgconfig(gobject-2.0)
+ BuildRequires:  pkgconfig(gudev-1.0) >= 237
+ BuildRequires:  pkgconfig(polkit-gobject-1)
++BuildRequires:  pkgconfig(libssc) >= 0.2.1
+ BuildRequires:  pkgconfig(systemd) >= 219
+ BuildRequires:  pkgconfig(udev) >= 219
+ Requires:       user(srvGeoClue)
+ %{?systemd_requires}
++
++Patch900: iio-sensor-proxy.patch
+ 
+ %description
+ This proxy reads sensor data from the IIO subsystem and serves to
+@@ -55,7 +58,7 @@
+ %meson -Dtests=false \
+        -Dgtk_doc=true \
+        -Dgeoclue-user=srvGeoClue \
+-       -Dssc-support=disabled \
++       -Dssc-support=enabled \
+        %{nil}
+ %meson_build
+ 

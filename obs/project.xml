@@ -1,0 +1,9 @@
+<project name="home:h-cheung:tb322fc">
+  <title>Lenovo Legion Y700 Gen 4 (TB322FC) — Tumbleweed packaging trials</title>
+  <description>Experimental aarch64 RPM ports of https://github.com/h0cheung/tb322fc-linux. Build success is not device validation. Android firmware and restricted runtime payloads are provisioned separately.</description>
+  <person userid="h-cheung" role="maintainer" />
+  <repository name="openSUSE_Tumbleweed">
+    <path project="openSUSE:Tumbleweed" repository="standard" />
+    <arch>aarch64</arch>
+  </repository>
+</project>

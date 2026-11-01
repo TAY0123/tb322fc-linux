@@ -1,0 +1,51 @@
+{
+  "sources": [
+    {
+      "file": "kshim-build-boot.py",
+      "kind": "file",
+      "dest": "kshim-build-boot.py",
+      "sha256": "18e520f3f1204b24a3390833247307b75c1fb2e187f51cf282f8f7329e6b351f"
+    },
+    {
+      "file": "freedom-runtime-244b74516d99d06cb0518609ce4b842ab278be8a.tar",
+      "kind": "git",
+      "dest": "armadaos-freedom/devices/lenovo-tb323fu/boot/kshim-success-source"
+    },
+    {
+      "file": "freedom-tools-244b74516d99d06cb0518609ce4b842ab278be8a.tar",
+      "kind": "git",
+      "dest": "armadaos-freedom/packages/kshim-tools/vendor"
+    },
+    {
+      "file": "CrDK-b6c3335.tar.gz",
+      "kind": "archive",
+      "dest": "CrDK-b6c3335.tar.gz",
+      "sha256": "a0182f8024f15d9b822116b15a968dc12429095f0dfb05d6779e2cafdf18c38e",
+      "keep": true
+    },
+    {
+      "file": "picolibc-f7edb0869e64b9d687f46961adeef7154921fe92.tar.gz",
+      "kind": "git",
+      "dest": "picolibc",
+      "sha256": "0d6fcabb34d546f4a99de5e984bca3f137cc09926391a97d8ed81219450b6bec"
+    },
+    {
+      "file": "lvgl-7f07a129e8d77f4984fff8e623fd5be18ff42e74.tar.gz",
+      "kind": "git",
+      "dest": "lvgl",
+      "sha256": "8a5e30223fd5b08cdeccb060f45b37a29868d6b1fdfc5bdbdf0dd89aaefb5a0e"
+    },
+    {
+      "file": "kShimC-82ce6eaa10c36e64cfd3f16799172d854f9a955b.tar.gz",
+      "kind": "git",
+      "dest": "libfdt",
+      "sha256": "bc52c6197716489f543904ae613916551c672c8e30719ddeb418065b0d1577ff"
+    },
+    {
+      "file": "busybox-1.36.1.tar.bz2",
+      "kind": "archive",
+      "dest": "busybox-1.36.1.tar.bz2",
+      "sha256": "b8cc24c9574d809e7279c3be349795c5d5ceb6fdf19ca709f80cde50e47de314"
+    }
+  ]
+}

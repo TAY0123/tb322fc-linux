@@ -1,0 +1,13 @@
+-------------------------------------------------------------------
+Sat Oct 31 14:00:00 UTC 2026 - h0cheung <hcheunh@gmail.com>
+
+- Backport LLVM's probed -fno-lifetime-dse build workaround for DXC's
+  allocation metadata, fixing invalid frees during DXIL compilation
+  with GCC and LTO while preserving the Oryon target and RPM flags.
+- Compile DXIL, native 16-bit DXIL and SPIR-V shaders in %check so a
+  compiler that builds successfully but crashes at runtime is rejected.
+
+-------------------------------------------------------------------
+Sat Oct 31 09:00:00 UTC 2026 - h-cheung
+
+- Initial Tumbleweed aarch64 build evaluation for TB322FC.

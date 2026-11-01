@@ -1,0 +1,3 @@
+<link project="openSUSE:Factory" package="gtk2" baserev="17250ddd8a1512ac031499a490d83457">
+  <patches />
+</link>

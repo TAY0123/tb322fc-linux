@@ -1,0 +1,6 @@
+<services>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://codeload.github.com/kettlelinux/kettle-framegen/tar.gz/4e736d007e188661e695ddf58693dea56d0f9e3c</param>
+    <param name="filename">kettle-framegen-4e736d007e188661e695ddf58693dea56d0f9e3c.tar.gz</param>
+  </service>
+</services>

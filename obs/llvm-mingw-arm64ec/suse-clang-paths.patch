@@ -1,0 +1,42 @@
+From: TB322FC maintainers
+Subject: Use SUSE LLVM paths and the shared ARM64X sysroot
+
+SUSE installs Clang resources in lib64 and versioned tool executables.
+This package builds only aarch64/arm64ec, sharing the ARM64X runtime tree.
+An explicit --sysroot disables Clang's ARM64EC-to-aarch64 directory
+fallback, so point it directly at that shared tree for both targets.
+
+--- a/install-wrappers.sh
++++ b/install-wrappers.sh
+@@ -74,6 +74,9 @@
+     resdir=$($HOST_CLANG -print-resource-dir)
+     # ex. /usr/lib/llvm-17
+     llvmdir=${resdir%/lib/clang/*}
++    if [ "$llvmdir" = "$resdir" ]; then
++        llvmdir=${resdir%/lib64/clang/*}
++    fi
+     # ex /lib/clang/17
+     clangres=${resdir#$llvmdir}
+ 
+@@ -84,7 +87,7 @@
+ 
+     # Note: clang will detect the "InstalledDir" based on the path that was used to invoke the tools
+     # This might still have some hidden effects
+-    printf '#!/bin/sh\nsr=$(dirname "$(dirname "$(readlink -f "$0")")")\nexec %s -resource-dir="$sr"%s --sysroot="$sr" --config-system-dir="$sr"/bin "$@"\n' "$HOST_CLANG_EXE" "$clangres" > $PREFIX/bin/clang
++    printf '#!/bin/sh\nsr=$(dirname "$(dirname "$(readlink -f "$0")")")\nexec %s -resource-dir="$sr"%s --sysroot="$sr"/aarch64-w64-mingw32 -B"$sr"/bin --config-system-dir="$sr"/bin "$@"\n' "$HOST_CLANG_EXE" "$clangres" > $PREFIX/bin/clang
+     # printf '#!/bin/sh\nsr=$(dirname "$(dirname "$(readlink -f "$0")")")\nexec %s -resource-dir="$sr"%s --sysroot="$sr" "$@"\n' "$(readlink -f "$HOST_CLANG_EXE")" "$clangres" > $PREFIX/bin/clang
+     chmod 755 $PREFIX/bin/clang
+     ln -sf clang $PREFIX/bin/clang++
+@@ -97,8 +100,10 @@
+     llvmexec="$PATH:$llvmdir/bin"
+ 
+     for exec in ld.lld llvm-ar llvm-ranlib llvm-nm llvm-objcopy llvm-strip llvm-rc llvm-cvtres \
+-                llvm-addr2line llvm-dlltool llvm-readelf llvm-size llvm-strings llvm-addr2line llvm-windres llvm-ml llvm-lib; do
+-        execpath=$(PATH=$llvmexec command -v $exec) && ln -sf $execpath $PREFIX/bin/$exec
++                clang-scan-deps llvm-addr2line llvm-dlltool llvm-readelf llvm-readobj llvm-objdump llvm-size llvm-strings llvm-addr2line llvm-windres llvm-ml llvm-lib; do
++        if execpath=$(PATH=$llvmexec command -v $exec-${HOST_CLANG_VER%%.*}) || execpath=$(PATH=$llvmexec command -v $exec); then
++            ln -sf $execpath $PREFIX/bin/$exec
++        fi
+     done
+ fi
+ 

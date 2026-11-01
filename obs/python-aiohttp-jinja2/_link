@@ -1,0 +1,3 @@
+<link project="openSUSE:Factory" package="python-aiohttp-jinja2" baserev="c4feb20dc0b324e50162960759ff316a">
+  <patches />
+</link>

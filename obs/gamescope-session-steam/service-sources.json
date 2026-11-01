@@ -1,0 +1,10 @@
+{
+  "sources": [
+    {
+      "file": "gamescope-session-steam-82c45fc112775e3fa927d5c326c39b21f1761cc1.tar.gz",
+      "kind": "git",
+      "dest": "gamescope-session-steam",
+      "sha256": "5129c0269158dc7714ea90ba6f525d30c32c668e5fb7741e1e02da9ed7c53b46"
+    }
+  ]
+}

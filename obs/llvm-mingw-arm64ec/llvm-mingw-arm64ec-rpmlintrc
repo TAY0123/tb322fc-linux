@@ -1,0 +1,7 @@
+# These are Windows ARM64X archives, not ELF or native Linux LTO objects.
+# %check validates every archive with llvm-ar and links a real ARM64EC DLL.
+addFilter(r"readelf-failed /usr/libexec/llvm-mingw-arm64ec/(aarch64-w64-mingw32/lib|lib64/clang/[0-9]+/lib/windows)/[^ ]+\.a ")
+
+# Upstream deliberately installs these three empty compatibility archives.
+# Their exact eight-byte contents are asserted in %check.
+addFilter(r"(static-library-without-symtab|static-library-without-debuginfo|lto-no-text-in-archive).* /usr/libexec/llvm-mingw-arm64ec/aarch64-w64-mingw32/lib/(libdelayimp|libssp|libssp_nonshared)\.a$")

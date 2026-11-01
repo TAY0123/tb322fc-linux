@@ -1,0 +1,8 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-3.0-or-later
+payload=/var/lib/lsfg-vk/current/usr/bin/lsfg-vk-cli
+if ! test -x "$payload"; then
+    echo 'LSFG runtime is not installed. Run: sudo lsfg-runtime-setup' >&2
+    exit 1
+fi
+exec "$payload" "$@"

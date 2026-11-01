@@ -1,0 +1,6 @@
+<link project="openSUSE:Factory" package="libcamera" baserev="906a7c26924e9cf36f1171982765b7db" rev="906a7c26924e9cf36f1171982765b7db">
+  <patches>
+    <apply name="project.diff" />
+    <delete name="libcamera-0.7.2.tar.xz" />
+  </patches>
+</link>

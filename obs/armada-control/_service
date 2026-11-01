@@ -1,0 +1,22 @@
+<services>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://raw.githubusercontent.com/mydanyi/armadaos-freedom/9788014a0293dc26745b000d02854ad88ef73e88/system_files/usr/libexec/armada/armada-control</param>
+    <param name="filename">armada-control.upstream</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://raw.githubusercontent.com/mydanyi/armadaos-freedom/9788014a0293dc26745b000d02854ad88ef73e88/system_files/usr/libexec/armada/armada-game-launch</param>
+    <param name="filename">armada-game-launch</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://raw.githubusercontent.com/mydanyi/armadaos-freedom/9788014a0293dc26745b000d02854ad88ef73e88/system_files/usr/lib/armada/armada_game_tweaks.py</param>
+    <param name="filename">armada_game_tweaks.py</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://raw.githubusercontent.com/mydanyi/armadaos-freedom/9788014a0293dc26745b000d02854ad88ef73e88/system_files/usr/lib/armada/armada_turnip.py</param>
+    <param name="filename">armada_turnip.py</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://raw.githubusercontent.com/mydanyi/armadaos-freedom/9788014a0293dc26745b000d02854ad88ef73e88/system_files/usr/share/armada/env-presets.json</param>
+    <param name="filename">env-presets.json</param>
+  </service>
+</services>

@@ -1,0 +1,17 @@
+<services>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://github.com/SteamDeckHomebrew/decky-loader/archive/v3.3.1.tar.gz</param>
+    <param name="filename">decky-loader-3.3.1.tar.gz</param>
+  </service>
+  <service name="node_modules" mode="serveronly">
+    <param name="input">npm-dependencies.json</param>
+    <param name="cpio">node_modules.obscpio</param>
+    <param name="output">node_modules.spec.inc</param>
+    <param name="legacy-container">true</param>
+    <param name="source-offset">10000</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://registry.npmjs.org/pnpm/-/pnpm-10.11.0.tgz</param>
+    <param name="filename">pnpm-10.11.0.tgz</param>
+  </service>
+</services>

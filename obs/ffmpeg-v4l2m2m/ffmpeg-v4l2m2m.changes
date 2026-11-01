@@ -1,0 +1,13 @@
+-------------------------------------------------------------------
+Sun Nov  1 02:40:00 UTC 2026 - h0cheung <hcheunh@gmail.com>
+
+- Enable H.264 and HEVC stateful V4L2 hardware decoders for Iris.
+- Disable the OpenH264 software decoder; retain the official reduced
+  codec configuration and unchanged build dependencies.
+- Check that software H.264/HEVC decoders, libx264, libx265 and nonfree
+  remain disabled, and both V4L2 hardware decoders are present.
+
+-------------------------------------------------------------------
+Sat Oct 31 09:00:00 UTC 2026 - h0cheung <hcheunh@gmail.com>
+
+- Initial Tumbleweed aarch64 build evaluation for TB322FC.

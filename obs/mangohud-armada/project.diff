@@ -1,0 +1,19 @@
+--- mangohud.spec.orig
++++ mangohud.spec
+@@ -61,6 +61,16 @@
+ Suggests:       goverlay
+ Provides:       bundled(ImGui)
+ Provides:       bundled(Vulkan-Headers-sdk)
++
++Patch900: 0001-Qualcomm-GPU-support.patch
++Patch901: 0002-GPU-monitoring.patch
++Patch902: 0003-Battery-name.patch
++Patch903: 0004-Qualcomm-battery-power-now.patch
++Patch904: 0005-RAM-name.patch
++Patch905: 0006-SM8750-Battery.patch
++Patch906: 0007-mangoapp-pause-when-steam-focused.patch
++Patch907: 0008-gpu_fdinfo-skip-unreadable-fdinfo.patch
++Patch908: 0009-mangoapp-align-frametime-fields-with-gamescope.patch
+ 
+ %description
+ A Vulkan and OpenGL overlay for monitoring FPS, temperatures, CPU/GPU load and more.

@@ -1,0 +1,108 @@
+--- kernel-source.spec.orig
++++ kernel-source.spec
+@@ -16,9 +16,9 @@
+ #
+ 
+ 
+-%define srcversion 7.3
+-%define patchversion 7.3.0
+-%define git_commit 7f1f6b13bae94d7fa8dab0b17bf0dee081868ed0
++%define srcversion 7.2.6
++%define patchversion 7.2.6
++%define git_commit 9788014a0293dc26745b000d02854ad88ef73e88
+ %define variant %{nil}
+ %define gcc_package gcc
+ %define gcc_compiler gcc
+@@ -28,11 +28,11 @@
+ %(chmod +x %_sourcedir/{guards,apply-patches,check-for-config-changes,group-source-files.pl,split-modules,modversions,kabi.pl,arch-symbols,check-module-license,splitflist,mergedep,moddep,modflist,kernel-subpackage-build})
+ 
+ Name:           kernel-source
+-Version:        7.3.0
++Version:        7.2.6
+ %if 0%{?is_kotd}
+-Release:        <RELEASE>.g7f1f6b1
++Release:        22
+ %else
+-Release:        0
++Release:        22
+ %endif
+ Summary:        The Linux Kernel Sources
+ License:        GPL-2.0-only
+@@ -56,10 +56,8 @@
+ %define _rpmmacrodir /etc/rpm
+ %endif
+ 
+-Source0:        https://www.kernel.org/pub/linux/kernel/v7.x/linux-%srcversion.tar.xz
++Source0:        linux-7.2.6.tar.xz
+ %if "https://www.kernel.org/pub/linux/kernel/v7.x/" != ""
+-Source1:        https://www.kernel.org/pub/linux/kernel/v7.x/linux-%srcversion.tar.sign
+-Source2:        linux.keyring
+ %endif
+ Source3:        kernel-source.rpmlintrc
+ Source14:       series.conf
+@@ -143,7 +141,7 @@
+ # 2) decrease build times (bsc#962356 boo#1175882)
+ %define _binary_payload w9.bzdio
+ 
+-%define do_vanilla "%variant" == ""
++%define do_vanilla 0
+ 
+ %description
+ Linux kernel sources with many fixes and improvements.
+@@ -230,6 +228,8 @@
+ %endif
+ 
+ %prep
++# Verify upstream linux-7.2.6.tar.xz
++printf '%s  %s\n' '039aef84f2b0994aeda3f4fcfc3d02ec9d7a9bbb9020ea264c43f446c860f606' '%{SOURCE0}' | sha256sum -c
+ 
+ # Unpack all sources and patches
+ %setup -q -c -T -a 100 -a 101 -a 102 -a 103 -a 104 -a 105 -a 106 -a 108 -a 109 -a 110 -a 111 -a 113 -a 114 -a 120 -a 121
+--- kernel-syms.spec.orig
++++ kernel-syms.spec
+@@ -16,39 +16,36 @@
+ #
+ 
+ 
+-%define git_commit 7f1f6b13bae94d7fa8dab0b17bf0dee081868ed0
++%define git_commit 9788014a0293dc26745b000d02854ad88ef73e88
+ %define variant %{nil}
+ 
+ %include %_sourcedir/kernel-spec-macros
+ 
+ Name:           kernel-syms
+-Version:        7.3.0
++Version:        7.2.6
+ %if 0%{?is_kotd}
+-Release:        <RELEASE>.g7f1f6b1
++Release:        22
+ %else
+-Release:        0
++Release:        22
+ %endif
+ Summary:        Kernel Symbol Versions (modversions)
+ License:        GPL-2.0-only
+ Group:          Development/Sources
+ URL:            https://www.kernel.org/
+ BuildRequires:  coreutils
+-ExclusiveArch:  %ix86 aarch64 armv6l armv7l ppc64le riscv64 s390x x86_64
++ExclusiveArch:  aarch64
+ Prefix:         /usr/src
+ AutoReqProv:    off
+ Source:         README.KSYMS
+ %ifarch aarch64
+-Requires:       kernel-64kb-devel = %version-%source_rel
+ %endif
+ %ifarch aarch64 armv6l armv7l %ix86 ppc64le riscv64 s390x x86_64
+-Requires:       kernel-default-devel = %version-%source_rel
+ %endif
+ %ifarch armv7l
+-Requires:       kernel-lpae-devel = %version-%source_rel
+ %endif
+ %ifarch %ix86
+-Requires:       kernel-pae-devel = %version-%source_rel
+ %endif
++Requires:       kernel-freedom-devel = %version-%source_rel
+ Requires:       kernel-devel%variant = %version-%source_rel
+ Provides:       %name = %version-%source_rel
+ Provides:       %name-srchash-%git_commit

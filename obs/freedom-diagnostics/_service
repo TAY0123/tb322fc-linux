@@ -1,0 +1,26 @@
+<services>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://raw.githubusercontent.com/mydanyi/armadaos-freedom/9788014a0293dc26745b000d02854ad88ef73e88/system_files/usr/bin/armada-sleep-debug</param>
+    <param name="filename">armada-sleep-debug</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://raw.githubusercontent.com/mydanyi/armadaos-freedom/9788014a0293dc26745b000d02854ad88ef73e88/system_files/usr/lib/armada/armada_sleep_debug.py</param>
+    <param name="filename">armada_sleep_debug.py</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://raw.githubusercontent.com/mydanyi/armadaos-freedom/9788014a0293dc26745b000d02854ad88ef73e88/system_files/usr/lib/systemd/system-sleep/40-armada-wake-ledger</param>
+    <param name="filename">40-armada-wake-ledger</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://raw.githubusercontent.com/mydanyi/armadaos-freedom/9788014a0293dc26745b000d02854ad88ef73e88/system_files/usr/libexec/armada/save-devcoredump</param>
+    <param name="filename">save-devcoredump</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://raw.githubusercontent.com/mydanyi/armadaos-freedom/9788014a0293dc26745b000d02854ad88ef73e88/system_files/usr/lib/udev/rules.d/70-armada-devcoredump.rules</param>
+    <param name="filename">70-armada-devcoredump.rules</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://raw.githubusercontent.com/mydanyi/armadaos-freedom/9788014a0293dc26745b000d02854ad88ef73e88/system_files/usr/lib/systemd/system/armada-save-devcoredump@.service</param>
+    <param name="filename">armada-save-devcoredump@.service</param>
+  </service>
+</services>

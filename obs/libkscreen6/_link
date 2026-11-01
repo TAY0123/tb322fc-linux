@@ -1,0 +1,5 @@
+<link project="openSUSE:Factory" package="libkscreen6" rev="2b7221484bb07a71fa1774fb370fac46" baserev="2b7221484bb07a71fa1774fb370fac46">
+  <patches>
+    <apply name="project.diff" />
+  </patches>
+</link>

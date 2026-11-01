@@ -1,0 +1,110 @@
+{
+  "sources": [
+    {
+      "file": "gamescope-afd6eac6e1b5045119831b63854bad68ec4fd92c.tar.gz",
+      "kind": "git",
+      "dest": "gamescope",
+      "sha256": "bf656473e6e113a59d0dabd2d4cd1a5d931a5ec5a9c7e08d608b63be76dbf1ae"
+    },
+    {
+      "file": "GamescopeShaders-359e480c548fc3a38a612da2de314980c8329983.tar.gz",
+      "kind": "git",
+      "dest": "GamescopeShaders",
+      "sha256": "28d4cb86ad6b904b8254197fabda34b270ee712ddb9f8a7af6650f68ece8a77f"
+    },
+    {
+      "file": "reshade-696b14cd6006ae9ca174e6164450619ace043283.tar.gz",
+      "kind": "git",
+      "dest": "reshade",
+      "sha256": "3aa6feda7773cc8ffa8fb012fe95e6207c776101e29198d0e0d34a0c5e339f6a"
+    },
+    {
+      "file": "vkroots-5106d8a0df95de66cc58dc1ea37e69c99afc9540.tar.gz",
+      "kind": "git",
+      "dest": "vkroots",
+      "sha256": "37b77586e91f7ebee70380dcddd73bf01ae4acef1053e6be41d0485ede022422"
+    },
+    {
+      "file": "SPIRV-Headers-d790ced752b5bfc06b6988baadef6eb2d16bdf96.tar.gz",
+      "kind": "git",
+      "dest": "SPIRV-Headers",
+      "sha256": "90141b3f6261dba643fe546d56b4539e61fe40e307c5c3b9985ea9fa0622ac3f"
+    },
+    {
+      "file": "openvr-ff87f683f41fe26cc9353dd9d9d7028357fd8e1a.tar.gz",
+      "kind": "git",
+      "dest": "openvr",
+      "sha256": "22ea84da76f0f37f15d3433aef5f202ad6f8df12c280da7caa47e0475eeb22fd"
+    },
+    {
+      "file": "libdisplay-info-c67a3e9bedb05ab61c7443704a1a107e76254595.tar.gz",
+      "kind": "git",
+      "dest": "libdisplay-info",
+      "sha256": "34f2109f3ba5a56f4e12062210261c98214f32b5568684311aa029da518bf2fd"
+    },
+    {
+      "file": "libliftoff-8b08dc1c14fd019cc90ddabe34ad16596b0691f4.tar.gz",
+      "kind": "git",
+      "dest": "libliftoff",
+      "sha256": "8de28aee6f90f47b7fc7037dcd2360166197c0b5d2033f3afdbd34f2ea1bf216"
+    },
+    {
+      "file": "wlroots-d783533489e1f75d6886c2ab5c5960090ef268f8.tar.gz",
+      "kind": "git",
+      "dest": "wlroots",
+      "sha256": "d4d7c5f4ff5729d5eff33859b58ab7ced812aca54367b75ecbdaf9aae448fff6"
+    },
+    {
+      "file": "glm-0af55ccecd98d4e5a8d1fad7de25ba429d60e863.tar.gz",
+      "kind": "git",
+      "dest": "gamescope/subprojects/glm",
+      "sha256": "e7f187d83523f505eb38dd25d297ea6c0d4ed856d733e808f18253f5a8fa88a0"
+    },
+    {
+      "file": "stb-5736b15f7ea0ffb08dd38af21067c314d6a3aae9.tar.gz",
+      "kind": "git",
+      "dest": "gamescope/subprojects/stb",
+      "sha256": "d00921d49b06af62aa6bfb97c1b136bec661dd11dd4eecbcb0da1f6da7cedb4c"
+    }
+  ],
+  "copies": [
+    [
+      "reshade",
+      "gamescope/src/reshade"
+    ],
+    [
+      "libdisplay-info",
+      "gamescope/subprojects/libdisplay-info"
+    ],
+    [
+      "libliftoff",
+      "gamescope/subprojects/libliftoff"
+    ],
+    [
+      "openvr",
+      "gamescope/subprojects/openvr"
+    ],
+    [
+      "vkroots",
+      "gamescope/subprojects/vkroots"
+    ],
+    [
+      "wlroots",
+      "gamescope/subprojects/wlroots"
+    ],
+    [
+      "SPIRV-Headers",
+      "gamescope/thirdparty/SPIRV-Headers"
+    ]
+  ],
+  "overlays": [
+    [
+      "gamescope/subprojects/packagefiles/glm",
+      "gamescope/subprojects/glm"
+    ],
+    [
+      "gamescope/subprojects/packagefiles/stb",
+      "gamescope/subprojects/stb"
+    ]
+  ]
+}

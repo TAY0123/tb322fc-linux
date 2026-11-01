@@ -1,0 +1,34 @@
+{
+  "sources": [
+    {
+      "file": "powerbuttond",
+      "kind": "file",
+      "dest": "powerbuttond",
+      "sha256": "b2bf19cb612d227329d0a7cad9434d7fa5abe5a98dfcd6b5291d626c2848f8ff"
+    },
+    {
+      "file": "input-lib",
+      "kind": "file",
+      "dest": "input-lib",
+      "sha256": "0985d4da6b591487f60e5f10d8ac6209cd38de8c1c3329085f69074708700bb5"
+    },
+    {
+      "file": "armada-powerbuttond.service",
+      "kind": "file",
+      "dest": "armada-powerbuttond.service",
+      "sha256": "a69221da35df649960d4424231f3ca51dd0d9506822c118a29668082e9a8e73a"
+    },
+    {
+      "file": "10-armada-powerbuttond.conf",
+      "kind": "file",
+      "dest": "10-armada-powerbuttond.conf",
+      "sha256": "67304c55aa69d414f90f71ecfade2cb1c8e0dd844e72dc5a6e11160d971f47a7"
+    },
+    {
+      "file": "50-armada-powerbutton-suspend",
+      "kind": "file",
+      "dest": "50-armada-powerbutton-suspend",
+      "sha256": "a0dcbd7210472a02d013c8c36fbbe29dd430baf29453ca02d5e6fc9de6fdb18d"
+    }
+  ]
+}

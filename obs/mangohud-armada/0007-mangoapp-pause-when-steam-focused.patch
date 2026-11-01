@@ -1,0 +1,39 @@
+From: tb322fc bring-up
+Subject: [PATCH] mangoapp: pause while the Steam UI is focused and the overlay is game-only
+
+With STEAM overlay level > 0 but "show overlay in Steam" disabled,
+steamclient still reports the HUD as active (no no_display in the
+config), while gamescope sets GAMESCOPE_FOCUSED_APP_GFX=769 for the
+focused Steam UI.  msg_read_thread computed steam_focused and render()
+suppressed the HUD content, but new_frame was never cleared, so the
+main loop kept doing full-rate empty ImGui/present/X11 work (~10% CPU
+on SM8750).
+
+Suppress new_frame while steam_focused (unless perf logging is active)
+so the main loop takes the paused path (hidden window, 0.5 s sleep).
+It resumes on the first frametime of a focused game.
+---
+
+diff --git a/src/app/main.cpp b/src/app/main.cpp
+--- a/src/app/main.cpp
++++ b/src/app/main.cpp
+@@ -218,6 +218,19 @@
+                         steam_focused = false;
+                     }
+ 
++                    /* With "show overlay in Steam" disabled, the HUD draws
++                     * nothing while the Steam UI is focused, but new_frame
++                     * still kept the main loop doing full-rate empty renders
++                     * (ImGui + present + X11 round trips), costing ~10% CPU.
++                     * Suppress new_frame (and clear a pending one) so the main
++                     * loop takes the paused path (hidden window, 0.5 s sleep).
++                     * It resumes on the first frametime of a focused game. */
++                    if (steam_focused && !logger->is_active()){
++                        std::unique_lock<std::mutex> lk(mangoapp_m);
++                        new_frame = false;
++                        should_new_frame = false;
++                    }
++
+                     if (msg_size > offsetof(mangoapp_msg_v1, latency_ns))
+                         gamescope_frametime(mangoapp_v1->app_frametime_ns, mangoapp_v1->latency_ns);
+ 

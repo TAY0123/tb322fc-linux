@@ -1,0 +1,21 @@
+-------------------------------------------------------------------
+Sat Oct 31 16:30:00 UTC 2026 - h0cheung <hcheunh@gmail.com>
+
+- Retain the openSUSE recipe adaptations when refreshing local sources:
+  python3, the service-provided CrDK path and RPM-only installation hooks.
+
+-------------------------------------------------------------------
+Sat Oct 31 16:25:00 UTC 2026 - h0cheung <hcheunh@gmail.com>
+
+- Create the selected root UUID link in the initramfs before systemd starts,
+  so early fstab remounts do not depend on udev enumeration completing.
+
+-------------------------------------------------------------------
+Sat Oct 31 15:00:00 UTC 2026 - h0cheung <hcheunh@gmail.com>
+
+- Require patch at runtime for the kShim boot builder.
+
+-------------------------------------------------------------------
+Sat Oct 31 09:00:00 UTC 2026 - h0cheung <hcheunh@gmail.com>
+
+- Initial Tumbleweed aarch64 build evaluation for TB322FC.

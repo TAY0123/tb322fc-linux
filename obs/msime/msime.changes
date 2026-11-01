@@ -1,0 +1,9 @@
+-------------------------------------------------------------------
+Sat Oct 31 18:48:00 UTC 2026 - h0cheung <hcheunh@gmail.com>
+
+- Link home:msime/msime and retain its source build and complete tests.
+- Add the missing Noto Sans build dependency for Pango canvas tests.
+- Port the optional Steam pinyin engine alias to 0.15.0, retain the
+  original msime-linux engine, and conflict with ibus-pinyin.
+- Exercise demand activation through both engine names with IBus.
+- Use the project Oryon target flags for Rust as well as C/C++.

@@ -1,0 +1,21 @@
+-------------------------------------------------------------------
+Sat Oct 31 13:08:00 UTC 2026 - h0cheung <hcheunh@gmail.com>
+
+- Link clang-scan-deps from the existing clang23 dependency so the
+  target-prefixed aliases resolve in the installed toolchain.
+- Disable SUSE's GNU strip and objcopy archive-normalization passes
+  for ARM64EC/ARM64X runtimes. The upstream wrapper build strips the
+  native executables, and llvm-ar produces deterministic archives.
+- Check dependency-scanner aliases and C++ linking after RPM symlink
+  normalization using a disposable installation layout.
+- Split Windows headers and libraries into the required -devel package,
+  hardlink duplicates, remove the build-path libtool archive and fix
+  import-library permissions.
+- Validate all Windows archives with llvm-ar and the three upstream
+  empty compatibility stubs byte-for-byte. Filter only the matching
+  native ELF/LTO diagnostics that do not apply to these files.
+
+-------------------------------------------------------------------
+Sat Oct 31 09:00:00 UTC 2026 - h0cheung <hcheunh@gmail.com>
+
+- Initial Tumbleweed aarch64 build evaluation for TB322FC.

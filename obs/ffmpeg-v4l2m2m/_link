@@ -1,0 +1,5 @@
+<link project="openSUSE:Factory" package="ffmpeg-9" baserev="255c08d0a36bbc394019a187562e7d5e" rev="255c08d0a36bbc394019a187562e7d5e">
+  <patches>
+    <apply name="project.diff" />
+  </patches>
+</link>

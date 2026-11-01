@@ -1,0 +1,18 @@
+<constraints>
+  <hardware>
+    <disk>
+      <size unit="G">50</size>
+    </disk>
+    <physicalmemory>
+      <size unit="G">16</size>
+    </physicalmemory>
+    <processors>4</processors>
+    <jobs>4</jobs>
+    <cpu>
+      <flag>bf16</flag>
+      <flag>i8mm</flag>
+      <flag>sha3</flag>
+      <flag>sm4</flag>
+    </cpu>
+  </hardware>
+</constraints>

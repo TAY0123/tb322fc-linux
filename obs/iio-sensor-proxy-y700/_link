@@ -1,0 +1,5 @@
+<link project="openSUSE:Factory" package="iio-sensor-proxy" baserev="f6702822e7d6d5244b62994af72d1faa">
+  <patches>
+    <apply name="project.diff" />
+  </patches>
+</link>

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<services>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://files.pythonhosted.org/packages/59/29/d557718c84ef1a8f275faa4caf8e353778121beefbe9fadfa0055ca99aae/kconfiglib-14.1.0.tar.gz</param>
+    <param name="filename">kconfiglib-14.1.0.tar.gz</param>
+  </service>
+</services>

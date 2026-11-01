@@ -1,0 +1,39 @@
+--- ffmpeg-9.spec.orig
++++ ffmpeg-9.spec
+@@ -1,3 +1,4 @@
++%define BUILD_ORIG 0
+ #
+ # spec file for package ffmpeg-9
+ #
+@@ -257,6 +258,10 @@
+ %endif
+ %endif
+ 
++Patch900: 0004-v4l2m2m-ffmpeg9-stateful.patch
++Patch901: 0005-v4l2m2m-orphan-capture-ffmpeg9.patch
++Patch902: 0006-v4l2m2m-p010-capture.patch
++
+ %description
+ FFmpeg is a multimedia framework, able to decode, encode,
+ transcode, mux, demux, stream, filter and play several formats
+@@ -668,9 +673,20 @@
+ 	--disable-decoder=h264,hevc,vc1,prores_raw,vvc \
+ 	--enable-encoder="$(perl -pe 's{^(\w*).*}{$1,}gs' <%_sourcedir/enable_encoders)" \
+ 	--enable-decoder="$(perl -pe 's{^(\w*).*}{$1,}gs' <%_sourcedir/enable_decoders)" \
++	--enable-v4l2-m2m \
++	--enable-decoder=h264_v4l2m2m,hevc_v4l2m2m \
++	--disable-decoder=h264,hevc,libopenh264 \
+ 
+ for i in H264 HEVC VC1 VVC; do
+ 	grep -q "#define CONFIG_${i}_DECODER 0" config_components.h
++done
++# TB322FC uses Iris through V4L2; retain no software H.264/HEVC fallback.
++grep -q "#define CONFIG_LIBOPENH264_DECODER 0" config_components.h
++for i in H264_V4L2M2M HEVC_V4L2M2M; do
++	grep -q "#define CONFIG_${i}_DECODER 1" config_components.h
++done
++for i in LIBX264 LIBX265 NONFREE; do
++	grep -q "#define CONFIG_${i} 0" config.h
+ done
+ %endif
+ 

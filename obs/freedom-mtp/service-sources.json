@@ -1,0 +1,22 @@
+{
+  "sources": [
+    {
+      "file": "mtp-gadget",
+      "kind": "file",
+      "dest": "mtp-gadget",
+      "sha256": "2ddc127261169150166418a52b4a2647f7392d721bcd56d171b687d18aaaafa9"
+    },
+    {
+      "file": "storage-lib",
+      "kind": "file",
+      "dest": "storage-lib",
+      "sha256": "460dc5d38e6594d09fd03e2c2ce049387fe013b97fd5d48ed1c63bb2b2f2addf"
+    },
+    {
+      "file": "armada-mtp.service",
+      "kind": "file",
+      "dest": "armada-mtp.service",
+      "sha256": "4b55c12d26d0793154c09c8518999308b79ad75dae51f3765c2bce72b419cb77"
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "sources": [
+    {
+      "file": "armada-sleep-debug",
+      "kind": "file",
+      "dest": "armada-sleep-debug",
+      "sha256": "593267b5d0bd7f125bf37f2b5b7239879af8e8f8c83275d161e633357580111f"
+    },
+    {
+      "file": "armada_sleep_debug.py",
+      "kind": "file",
+      "dest": "armada_sleep_debug.py",
+      "sha256": "9de96cb6ecee848839ec985311e8707ca75db6ba0d8c8c71e14a7e44e53a1ac8"
+    },
+    {
+      "file": "40-armada-wake-ledger",
+      "kind": "file",
+      "dest": "40-armada-wake-ledger",
+      "sha256": "b856c9083cdd3c03accbbb27ea38aad96b2486b1b0cb645767c1dad4021a66b3"
+    },
+    {
+      "file": "save-devcoredump",
+      "kind": "file",
+      "dest": "save-devcoredump",
+      "sha256": "2ac5b3742310e0b6f33a1f28659aae105f0073ee8a5e0957d6c883062c89ce53"
+    },
+    {
+      "file": "70-armada-devcoredump.rules",
+      "kind": "file",
+      "dest": "70-armada-devcoredump.rules",
+      "sha256": "e16f173bb1790a8309a71ea7d7fd6bcf5a662ef0bfffb42fe45ded7d07bdf11e"
+    },
+    {
+      "file": "armada-save-devcoredump@.service",
+      "kind": "file",
+      "dest": "armada-save-devcoredump@.service",
+      "sha256": "0dd04c2343e015b405d3cd7e24ff315ddebe50dafdd3f97644319d3d4e229d1f"
+    }
+  ]
+}

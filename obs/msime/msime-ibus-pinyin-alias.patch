@@ -1,0 +1,181 @@
+--- a/platforms/linux/src/entrypoints/ibus_main.cpp
++++ b/platforms/linux/src/entrypoints/ibus_main.cpp
+@@ -8,6 +8,7 @@
+ #include <array>
+ #include <fstream>
+ #include <iostream>
++#include <string>
+ #include <iterator>
+ #include <exception>
+ #include <filesystem>
+@@ -22,6 +23,17 @@
+ 
+ namespace {
+ constexpr char kIBusComponentName[] = MSIME_EDITION_TAURI_IDENTIFIER ".IBus";
++
++// XML 列表、工厂注册和崩溃恢复共用同一组名字，保留原引擎名。
++bool is_supported_engine_name(const gchar *name) {
++  if (g_strcmp0(name, MSIME_EDITION_IBUS_ENGINE) == 0)
++    return true;
++#ifdef MSIME_IBUS_PINYIN_ALIAS
++  return g_strcmp0(name, "pinyin") == 0;
++#else
++  return false;
++#endif
++}
+ 
+ struct OptionsWatch {
+   const char *path;
+@@ -58,13 +70,15 @@
+         // An error here is the daemon reporting that no global engine is set.
+         auto current = ibus_bus_get_global_engine_async_finish(bus, result, nullptr);
+         const gchar *name = current ? ibus_engine_desc_get_name(current) : nullptr;
+-        const bool restore = name == nullptr || *name == '\0' || g_strcmp0(name, MSIME_EDITION_IBUS_ENGINE) == 0;
++        const bool restore = name == nullptr || *name == '\0' || is_supported_engine_name(name);
++        const std::string target = name && is_supported_engine_name(name)
++            ? name : MSIME_EDITION_IBUS_ENGINE;
+         if (current)
+           g_object_unref(current);
+         if (!restore)
+           return;
+         ibus_bus_set_global_engine_async(
+-            bus, MSIME_EDITION_IBUS_ENGINE, -1, nullptr,
++            bus, target.c_str(), -1, nullptr,
+             +[](GObject *source, GAsyncResult *result, gpointer) {
+               GError *error = nullptr;
+               if (!ibus_bus_set_global_engine_async_finish(IBUS_BUS(source), result, &error))
+@@ -207,10 +221,13 @@
+   auto factory = ibus_factory_new(ibus_bus_get_connection(bus));
+   ibus_factory_add_engine(factory, MSIME_EDITION_IBUS_ENGINE,
+                           msime_ibus_engine_get_type());
++#ifdef MSIME_IBUS_PINYIN_ALIAS
++  ibus_factory_add_engine(factory, "pinyin", msime_ibus_engine_get_type());
++#endif
+ #if IBUS_CHECK_VERSION(1, 5, 27)
+   g_signal_connect(factory, "create-engine",
+       G_CALLBACK(+[](IBusFactory *factory, const gchar *name, gpointer) -> IBusEngine * {
+-        if (g_strcmp0(name, MSIME_EDITION_IBUS_ENGINE) != 0)
++        if (!is_supported_engine_name(name))
+           return nullptr;
+         static guint64 sequence = 0;
+         auto path = g_strdup_printf("/org/freedesktop/IBus/Engine/MSIME/%" G_GUINT64_FORMAT,
+@@ -243,6 +260,13 @@
+       ibus_engine_desc_new(MSIME_EDITION_IBUS_ENGINE, MSIME_EDITION_IBUS_LONGNAME,
+                            MSIME_EDITION_DISPLAY_NAME, MSIME_EDITION_IBUS_LANGUAGE,
+                            "GPL-3.0-only", "MSIME contributors", MSIME_EDITION_ICON, "us"));
++#ifdef MSIME_IBUS_PINYIN_ALIAS
++  ibus_component_add_engine(
++      component,
++      ibus_engine_desc_new("pinyin", "Metasequoia 水杉输入法 (Steam)",
++                           "Shared MSIME Linux input runtime", "zh",
++                           "GPL-3.0-only", "MSIME contributors", MSIME_EDITION_ICON, "default"));
++#endif
+   if (!ibus_bus_register_component(bus, component)) {
+     g_object_unref(component);
+     g_object_unref(factory);
+--- a/platforms/linux/CMakeLists.txt
++++ b/platforms/linux/CMakeLists.txt
+@@ -217,6 +217,28 @@
+ target_link_libraries(msime-linux-ibus PRIVATE Threads::Threads)
+ target_compile_options(msime-linux-ibus PRIVATE -Wall -Wextra -Werror)
+ target_link_libraries(msime-linux-ibus PRIVATE msime-ibus-host)
++# Steam 按固定名字 pinyin 请求引擎；显式启用时才发布该别名，避免与旧引擎冲突。
++option(MSIME_IBUS_PINYIN_ALIAS "Expose the full IBus engine as pinyin for Steam" OFF)
++set(MSIME_IBUS_ALIAS_ENGINE_XML "")
++if(MSIME_IBUS_PINYIN_ALIAS)
++  if(NOT MSIME_EDITION_IS_FULL)
++    message(FATAL_ERROR "MSIME_IBUS_PINYIN_ALIAS requires MSIME_EDITION=full")
++  endif()
++  target_compile_definitions(msime-linux-ibus PRIVATE MSIME_IBUS_PINYIN_ALIAS=1)
++  set(MSIME_IBUS_ALIAS_ENGINE_XML [=[
++    <engine>
++      <name>pinyin</name>
++      <longname>Metasequoia 水杉输入法 (Steam)</longname>
++      <description>Shared MSIME Linux input runtime</description>
++      <language>zh</language>
++      <license>GPL-3.0-only</license>
++      <author>MSIME contributors</author>
++      <icon>msime-linux</icon>
++      <layout>default</layout>
++      <rank>99</rank>
++    </engine>
++]=])
++endif()
+ add_executable(msime-linux-dictionary src/providers/dictionary_request.cpp)
+ add_executable(msime-linux-prepare src/entrypoints/prepare_host_main.cpp)
+ target_compile_options(msime-linux-prepare PRIVATE -Wall -Wextra -Werror)
+@@ -670,6 +692,13 @@
+            COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/runtime/daemon_activation.py"
+                    $<TARGET_FILE:msime-linux-ibus> "${CMAKE_CURRENT_BINARY_DIR}/${MSIME_EDITION_PACKAGE}.xml")
+   set_tests_properties(linux-ibus-demand-activation PROPERTIES TIMEOUT 30 SKIP_RETURN_CODE 77)
++  if(MSIME_IBUS_PINYIN_ALIAS)
++    add_test(NAME linux-ibus-pinyin-demand-activation
++             COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/runtime/daemon_activation.py"
++                     $<TARGET_FILE:msime-linux-ibus> "${CMAKE_CURRENT_BINARY_DIR}/${MSIME_EDITION_PACKAGE}.xml"
++                     --engine pinyin)
++    set_tests_properties(linux-ibus-pinyin-demand-activation PROPERTIES TIMEOUT 30 SKIP_RETURN_CODE 77)
++  endif()
+ endif()
+ install(TARGETS msime-linux-ibus msime-linux-dictionary msime-linux-cloud-dictionary msime-linux-cloud-clipboard msime-linux-online msime-linux-translation msime-linux-clipboard
+                 msime-linux-handwriting msime-linux-voice msime-linux-emoji msime-linux-clipboard-capture msime-linux-prepare
+--- a/platforms/linux/data/msime-linux.xml.in
++++ b/platforms/linux/data/msime-linux.xml.in
+@@ -20,5 +20,5 @@
+       <!-- default 表示切到本输入法时不改当前键盘布局：IBus 面板和 GNOME Shell 都会把引擎写的具体布局（例如 us）套到键盘上，Dvorak、Colemak 用户切过来就被换回 QWERTY（#6365）。按键按布局翻译后的 keyval 处理，不依赖 us。 -->
+       <layout>default</layout>
+     </engine>
+-  </engines>
++@MSIME_IBUS_ALIAS_ENGINE_XML@  </engines>
+ </component>
+--- a/platforms/linux/tests/runtime/daemon_activation.py
++++ b/platforms/linux/tests/runtime/daemon_activation.py
+@@ -19,6 +19,7 @@
+     parser.add_argument("host")
+     parser.add_argument("component")
+     parser.add_argument("--options")
++    parser.add_argument("--engine", help="选择组件声明的指定引擎，用于验证别名首次激活")
+     parser.add_argument("--session", action="store_true", help=argparse.SUPPRESS)
+     args = parser.parse_args()
+     if not all(shutil.which(tool) for tool in ("ibus-daemon", "dbus-run-session")):
+@@ -44,7 +45,8 @@
+         options.write_text(Path(args.options).read_text() if args.options else '{"preferences":{}}')
+         tree = ET.parse(args.component)
+         component = tree.getroot()
+-        engine = component.findtext("engines/engine/name")
++        engine = args.engine or component.findtext("engines/engine/name")
++        assert engine in [entry.text for entry in component.findall("engines/engine/name")], "组件未声明请求的引擎"
+         assert engine, "组件没有引擎名"
+         host = str(Path(args.host).resolve())
+         launcher = Path(host).parent / "msime-linux-ibus-launcher"
+--- /dev/null
++++ b/.agents/notes/implemented/feature/2026-10-18-linux-ibus-steam-pinyin-alias.md
+@@ -0,0 +1,29 @@
++# Agent Note: 为 Steam 提供可选的 pinyin 引擎别名
++
++Status: implemented
++
++## Problem
++
++Steam 游戏模式按固定的 pinyin 名字请求中文引擎，原版 full 宿主只接受 msime-linux。只改 XML 能通过引擎列表查询，却无法创建实际引擎。GNOME 已保存原名字，直接重命名会破坏现有输入源。
++
++## Decision
++
++构建选项 MSIME_IBUS_PINYIN_ALIAS 默认关闭，只允许 full 版本开启。开启时，组件模板、运行时组件注册、工厂和崩溃恢复的名字判断同时接受 pinyin；原名 msime-linux 保留。两者运行相同的原生宿主和核心库，不转发 D-Bus 消息，不引入代理进程。
++
++只将选项用于已移除旧 ibus-pinyin 的系统，包管理器声明同名冲突。别名只是入口，不复制或强制更改用户的输入方案、词库或偏好。恢复时若当前名字仍可读则保留该别名；IBus 已清空当前引擎时沿用原来的 canonical 回退。
++
++检索现有笔记时，Windows Steam/CS2 记录与 Linux 的引擎名无关；Linux IBus 键盘布局笔记部分重叠，新别名继续使用 default 布局，原布局决定保持不变。
++
++## Alternatives considered
++
++- 仅修改 XML：部署简单，但工厂拒绝未知名字，无法完成引擎创建。
++- 独立 IBus 转接组件：不用重编宿主，但需要维护按键、焦点、候选与生命周期转发；为一个名字引入另一套运行组件不划算。
++- 替换原引擎名：改动小，但 GNOME 已有输入源失效，所以保留原名并增加别名。
++
++## Consequences
++
++Steam 能按固定名字请求同一个 msime 引擎，GNOME 保持原有入口。默认构建没有别名；启用该选项的发行包必须处理旧引擎冲突。openSUSE 下游包链接 home:msime 的源码规格，完整重编宿主、核心库和设置应用；别名图标沿用 0.15.0 的 msime-linux 应用图标。实际游戏模式候选表、简繁属性和上屏仍需要人工确认，不因编译成功而宣称可用。
++
++## Testing
++
++复用真实 IBus daemon 的首次激活测试，通过可选的 `--engine pinyin` 覆盖别名入口；原名仍运行原测试。构建开启别名时，CMake 追加该用例，关闭时不追加。OBS 的完整测试结果与平板上的实际 Steam 输入验收分别记录，不能用编译成功代替上屏验证。

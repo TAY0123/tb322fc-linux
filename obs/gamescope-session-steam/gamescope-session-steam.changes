@@ -1,0 +1,10 @@
+-------------------------------------------------------------------
+Sat Oct 31 14:00:00 UTC 2026 - h0cheung <hcheunh@gmail.com>
+
+- Use the packaged Python interpreter for steam-http-loader, resolving
+  the unsatisfied /bin/env dependency on Tumbleweed.
+
+-------------------------------------------------------------------
+Sat Oct 31 09:00:00 UTC 2026 - h0cheung <hcheunh@gmail.com>
+
+- Initial Tumbleweed aarch64 build evaluation for TB322FC.

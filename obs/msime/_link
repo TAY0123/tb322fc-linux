@@ -1,0 +1,5 @@
+<link project="home:msime" package="msime" baserev="b7687c79737c25bef0e69108c60b4a19">
+  <patches>
+    <apply name="project.diff" />
+  </patches>
+</link>

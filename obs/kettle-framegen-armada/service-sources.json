@@ -1,0 +1,10 @@
+{
+  "sources": [
+    {
+      "file": "kettle-framegen-4e736d007e188661e695ddf58693dea56d0f9e3c.tar.gz",
+      "kind": "git",
+      "dest": "kettle-framegen",
+      "sha256": "5d6a35de9f0253d547b5b57255354ed4b8fffb1cfacf2c0c3ee696615c32c35f"
+    }
+  ]
+}

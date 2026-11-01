@@ -1,0 +1,14 @@
+<services>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://codeload.github.com/mstorsjo/llvm-mingw/tar.gz/030097eeee87fcfd0f3bfe536b21cbd6e5d3b324</param>
+    <param name="filename">llvm-mingw-030097eeee87fcfd0f3bfe536b21cbd6e5d3b324.tar.gz</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://codeload.github.com/mingw-w64/mingw-w64/tar.gz/9f55f4a2d3b9783dab76d9808be3d6279b99ec2a</param>
+    <param name="filename">mingw-w64-9f55f4a2d3b9783dab76d9808be3d6279b99ec2a.tar.gz</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://github.com/llvm/llvm-project/releases/download/llvmorg-23.1.4/llvm-project-23.1.4.src.tar.xz</param>
+    <param name="filename">llvm-project-23.1.4.src.tar.xz</param>
+  </service>
+</services>

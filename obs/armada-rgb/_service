@@ -1,0 +1,9 @@
+<services>
+  <service name="cargo_vendor" mode="manual">
+    <param name="src">armada-rgb-0.1.0-local.tar.xz</param>
+    <param name="custom-root">local</param>
+    <param name="update">false</param>
+    <param name="respect-lockfile">true</param>
+    <param name="compression">zst</param>
+  </service>
+</services>

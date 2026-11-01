@@ -1,0 +1,102 @@
+<services>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://codeload.github.com/justradical/Sloptiscaler/tar.gz/f80e4da339cd4624212fd0546922571fe01205c1</param>
+    <param name="filename">Sloptiscaler-f80e4da339cd4624212fd0546922571fe01205c1.tar.gz</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://codeload.github.com/brofield/simpleini/tar.gz/6048871ea9ee0ec24be5bd099d161a10567d7dc2</param>
+    <param name="filename">simpleini-6048871ea9ee0ec24be5bd099d161a10567d7dc2.tar.gz</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://codeload.github.com/martinus/unordered_dense/tar.gz/73f3cbb237e84d483afafc743f1f14ec53e12314</param>
+    <param name="filename">unordered_dense-73f3cbb237e84d483afafc743f1f14ec53e12314.tar.gz</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://codeload.github.com/intel/xess/tar.gz/8fe81bdbbaf00b3c1b733fd0d830c333dc84e6f0</param>
+    <param name="filename">xess-8fe81bdbbaf00b3c1b733fd0d830c333dc84e6f0.tar.gz</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://codeload.github.com/KhronosGroup/Vulkan-Headers/tar.gz/d64e9e156ac818c19b722ca142230b68e3daafe3</param>
+    <param name="filename">Vulkan-Headers-d64e9e156ac818c19b722ca142230b68e3daafe3.tar.gz</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://codeload.github.com/gabime/spdlog/tar.gz/faa0a7a9c5a3550ed5461fab7d8e31c37fd1a2ef</param>
+    <param name="filename">spdlog-faa0a7a9c5a3550ed5461fab7d8e31c37fd1a2ef.tar.gz</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://codeload.github.com/Neargye/magic_enum/tar.gz/a733a2ea665ca5d72b7270f0334bf2e7b82bd0cc</param>
+    <param name="filename">magic_enum-a733a2ea665ca5d72b7270f0334bf2e7b82bd0cc.tar.gz</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://codeload.github.com/NVIDIA/nvapi/tar.gz/9b181ea572f680327fe01a14a0f1f41c78034104</param>
+    <param name="filename">nvapi-9b181ea572f680327fe01a14a0f1f41c78034104.tar.gz</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://codeload.github.com/microsoft/DirectXMath/tar.gz/b758b4a5669aca3542b4bf2b0cbc334696edd302</param>
+    <param name="filename">DirectXMath-b758b4a5669aca3542b4bf2b0cbc334696edd302.tar.gz</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://codeload.github.com/microsoft/Detours/tar.gz/adb07604aa56508448b95bf037c2a6d0d3b6831a</param>
+    <param name="filename">Detours-adb07604aa56508448b95bf037c2a6d0d3b6831a.tar.gz</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://gitlab.freedesktop.org/freetype/freetype/-/archive/42608f77f20749dd6ddc9e0536788eaad70ea4b5/freetype-42608f77f20749dd6ddc9e0536788eaad70ea4b5.tar.gz</param>
+    <param name="filename">freetype-42608f77f20749dd6ddc9e0536788eaad70ea4b5.tar.gz</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://codeload.github.com/arm/accuracy-super-resolution-generic-library/tar.gz/0501f490bd9946a2e1806b5363d7ab8a9a6a5e0a</param>
+    <param name="filename">accuracy-super-resolution-generic-library-0501f490bd9946a2e1806b5363d7ab8a9a6a5e0a.tar.gz</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://codeload.github.com/GPUOpen-Effects/FidelityFX-FSR2/tar.gz/1680d1edd5c034f88ebbbb793d8b88f8842cf804</param>
+    <param name="filename">FidelityFX-FSR2-1680d1edd5c034f88ebbbb793d8b88f8842cf804.tar.gz</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://raw.githubusercontent.com/GPUOpen-LibrariesAndSDKs/FidelityFX-SDK/c6efa6bf7f2027b3ec94f28578bb5965eabb9e55/ffx-api/include/ffx_api/ffx_api.h</param>
+    <param name="filename">ffx-ffx_api.h</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://raw.githubusercontent.com/GPUOpen-LibrariesAndSDKs/FidelityFX-SDK/c6efa6bf7f2027b3ec94f28578bb5965eabb9e55/ffx-api/include/ffx_api/ffx_api.hpp</param>
+    <param name="filename">ffx-ffx_api.hpp</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://raw.githubusercontent.com/GPUOpen-LibrariesAndSDKs/FidelityFX-SDK/c6efa6bf7f2027b3ec94f28578bb5965eabb9e55/ffx-api/include/ffx_api/ffx_api_loader.h</param>
+    <param name="filename">ffx-ffx_api_loader.h</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://raw.githubusercontent.com/GPUOpen-LibrariesAndSDKs/FidelityFX-SDK/c6efa6bf7f2027b3ec94f28578bb5965eabb9e55/ffx-api/include/ffx_api/ffx_api_types.h</param>
+    <param name="filename">ffx-ffx_api_types.h</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://raw.githubusercontent.com/GPUOpen-LibrariesAndSDKs/FidelityFX-SDK/c6efa6bf7f2027b3ec94f28578bb5965eabb9e55/ffx-api/include/ffx_api/ffx_framegeneration.h</param>
+    <param name="filename">ffx-ffx_framegeneration.h</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://raw.githubusercontent.com/GPUOpen-LibrariesAndSDKs/FidelityFX-SDK/c6efa6bf7f2027b3ec94f28578bb5965eabb9e55/ffx-api/include/ffx_api/ffx_framegeneration.hpp</param>
+    <param name="filename">ffx-ffx_framegeneration.hpp</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://raw.githubusercontent.com/GPUOpen-LibrariesAndSDKs/FidelityFX-SDK/c6efa6bf7f2027b3ec94f28578bb5965eabb9e55/ffx-api/include/ffx_api/ffx_upscale.h</param>
+    <param name="filename">ffx-ffx_upscale.h</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://raw.githubusercontent.com/GPUOpen-LibrariesAndSDKs/FidelityFX-SDK/c6efa6bf7f2027b3ec94f28578bb5965eabb9e55/ffx-api/include/ffx_api/ffx_upscale.hpp</param>
+    <param name="filename">ffx-ffx_upscale.hpp</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://raw.githubusercontent.com/GPUOpen-LibrariesAndSDKs/FidelityFX-SDK/c6efa6bf7f2027b3ec94f28578bb5965eabb9e55/ffx-api/include/ffx_api/dx12/ffx_api_dx12.h</param>
+    <param name="filename">ffx-dx12-ffx_api_dx12.h</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://raw.githubusercontent.com/GPUOpen-LibrariesAndSDKs/FidelityFX-SDK/c6efa6bf7f2027b3ec94f28578bb5965eabb9e55/ffx-api/include/ffx_api/dx12/ffx_api_dx12.hpp</param>
+    <param name="filename">ffx-dx12-ffx_api_dx12.hpp</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://raw.githubusercontent.com/GPUOpen-LibrariesAndSDKs/FidelityFX-SDK/c6efa6bf7f2027b3ec94f28578bb5965eabb9e55/ffx-api/include/ffx_api/vk/ffx_api_vk.h</param>
+    <param name="filename">ffx-vk-ffx_api_vk.h</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://raw.githubusercontent.com/GPUOpen-LibrariesAndSDKs/FidelityFX-SDK/c6efa6bf7f2027b3ec94f28578bb5965eabb9e55/ffx-api/include/ffx_api/vk/ffx_api_vk.hpp</param>
+    <param name="filename">ffx-vk-ffx_api_vk.hpp</param>
+  </service>
+</services>

@@ -1,0 +1,5 @@
+<link project="openSUSE:Factory" package="Mesa" baserev="178509e5074830bb945e35ec001b50bb">
+  <patches>
+    <apply name="project.diff" />
+  </patches>
+</link>

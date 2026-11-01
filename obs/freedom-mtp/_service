@@ -1,0 +1,14 @@
+<services>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://raw.githubusercontent.com/mydanyi/armadaos-freedom/9788014a0293dc26745b000d02854ad88ef73e88/system_files/usr/libexec/armada/mtp-gadget</param>
+    <param name="filename">mtp-gadget</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://raw.githubusercontent.com/mydanyi/armadaos-freedom/9788014a0293dc26745b000d02854ad88ef73e88/system_files/usr/lib/armada/storage-lib</param>
+    <param name="filename">storage-lib</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://raw.githubusercontent.com/mydanyi/armadaos-freedom/9788014a0293dc26745b000d02854ad88ef73e88/system_files/usr/lib/systemd/system/armada-mtp.service</param>
+    <param name="filename">armada-mtp.service</param>
+  </service>
+</services>

@@ -1,0 +1,3 @@
+<link project="openSUSE:Factory" package="python-aiohttp_cors" baserev="3019dfa68c61cea186ab48d840a71916">
+  <patches />
+</link>

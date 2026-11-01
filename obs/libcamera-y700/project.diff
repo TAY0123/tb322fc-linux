@@ -1,0 +1,30 @@
+--- libcamera.spec.orig
++++ libcamera.spec
+@@ -30,7 +30,7 @@
+ %bcond_with    signed_ipa
+ 
+ Name:           libcamera%extname
+-Version:        0.7.2
++Version:        0.7.2+git20260911.a6ef49c
+ Release:        0
+ Summary:        A complex camera support library in C++
+ License:        CC-BY-SA-4.0 AND GPL-2.0-or-later AND LGPL-2.1-or-later
+@@ -41,6 +41,7 @@
+ Source:         libcamera-%version.tar.xz
+ Source1:        baselibs.conf
+ Patch1:         libcamera-ov02e10-initial-support.patch
++Patch900:       tb322fc-camera.patch
+ BuildRequires:  c++_compiler
+ BuildRequires:  meson >= 1.0.1
+ BuildRequires:  pkg-config
+@@ -183,8 +184,8 @@
+ 	-Dqcam=disabled -Dcam-output-sdl2=disabled \
+ %endif
+ 	-Drpi-awb-nn=disabled \
+-	-Dv4l2=false -Dtracing=disabled \
+-	-Dpipelines=auto,vimc \
++	-Dv4l2=disabled -Dtracing=disabled \
++	-Dpipelines=simple -Dipas=softisp -Dsoftisp-gpu=disabled \
+ 	-Dlc-compliance=disabled -Dlibunwind=disabled
+ %meson_build
+ 

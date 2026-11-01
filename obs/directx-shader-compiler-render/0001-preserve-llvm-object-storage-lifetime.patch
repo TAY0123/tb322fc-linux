@@ -1,0 +1,30 @@
+From: h0cheung <hcheunh@gmail.com>
+Subject: [PATCH] cmake: preserve LLVM allocation metadata with GCC
+
+DXC's older LLVM writes User allocation flags before construction and reads
+them after destruction. GCC lifetime-based dead-store elimination can remove
+these writes, causing DXIL compilation to free the wrong pointer. The failure
+reproduces in DxilValueCache's PHINode sentinel destructor with GCC 16 and LTO.
+
+Backport the compiler-flag workaround from LLVM 18's HandleLLVMOptions.cmake,
+using DXC's older add_flag_if_supported signature. Unsupported compilers do not
+receive this flag. Keep the distribution's optimization and target flags.
+
+References: https://github.com/llvm/llvm-project/issues/57740
+            https://github.com/llvm/llvm-project/blob/llvmorg-18.1.8/llvm/cmake/modules/HandleLLVMOptions.cmake
+
+--- a/cmake/modules/HandleLLVMOptions.cmake
++++ b/cmake/modules/HandleLLVMOptions.cmake
+@@ -502,6 +502,12 @@
+     add_flag_if_supported("-Werror=date-time" WERROR_DATE_TIME)
+   endif ()
+ 
++  # User allocation metadata must survive construction and destruction.
++  # GCC lifetime-based DSE otherwise removes these writes, notably with LTO.
++  # Match the workaround used by LLVM before its allocation code was fixed.
++  # Probe the flag so other compilers retain their existing behavior.
++  add_flag_if_supported("-fno-lifetime-dse" NO_LIFETIME_DSE)
++
+   if (LLVM_ENABLE_MODULES)
+     set(OLD_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
+     set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -fmodules -fcxx-modules")

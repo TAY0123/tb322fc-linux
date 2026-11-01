@@ -1,0 +1,14 @@
+From: h0cheung <hcheunh@gmail.com>
+Subject: [PATCH] Use the Python interpreter path provided by openSUSE
+
+The upstream /bin/env shebang creates an unsatisfied RPM file dependency on
+Tumbleweed, where env is provided at /usr/bin/env. Invoke Python directly.
+
+--- a/usr/bin/steam-http-loader
++++ b/usr/bin/steam-http-loader
+@@ -1,4 +1,4 @@
+-#!/bin/env python3
++#!/usr/bin/python3
+ import urllib.parse
+ import os.path
+ import argparse

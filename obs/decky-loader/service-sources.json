@@ -1,0 +1,10 @@
+{
+  "sources": [
+    {
+      "file": "decky-loader-3.3.1.tar.gz",
+      "kind": "archive",
+      "dest": "decky-loader-3.3.1.tar.gz",
+      "sha256": "8c102ef54c7be4b2505564850e865c124f85712e5636b164bc73134ecf0a5813"
+    }
+  ]
+}

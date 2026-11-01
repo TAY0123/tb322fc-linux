@@ -1,0 +1,5 @@
+<link project="openSUSE:Factory" package="inputplumber" baserev="0f65f71904ad2de48975f39c426cca13">
+  <patches>
+    <apply name="project.diff" />
+  </patches>
+</link>

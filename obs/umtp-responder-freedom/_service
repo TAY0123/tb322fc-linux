@@ -1,0 +1,6 @@
+<services>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://codeload.github.com/viveris/uMTP-Responder/tar.gz/153f76d65608c184a972ad7d0b4ae605e56c0972</param>
+    <param name="filename">uMTP-Responder.tar.gz</param>
+  </service>
+</services>

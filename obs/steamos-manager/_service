@@ -1,0 +1,20 @@
+<services>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://gitlab.steamos.cloud/holo/steamos-manager/-/archive/8e2883d0d7e2fc3994e822ca9853c03561ca6eec/steamos-manager-8e2883d0d7e2fc3994e822ca9853c03561ca6eec.tar.gz</param>
+    <param name="filename">steamos-manager-8e2883d0d7e2fc3994e822ca9853c03561ca6eec.tar.gz</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://raw.githubusercontent.com/mydanyi/armadaos-freedom/9788014a0293dc26745b000d02854ad88ef73e88/packages/steamos-manager/platform.toml</param>
+    <param name="filename">platform.toml</param>
+  </service>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://raw.githubusercontent.com/mydanyi/armadaos-freedom/9788014a0293dc26745b000d02854ad88ef73e88/packages/steamos-manager/devices/sm8750.toml</param>
+    <param name="filename">sm8750.toml</param>
+  </service>
+  <service name="cargo_vendor" mode="manual">
+    <param name="src">*steamos-manager-8e2883d0d7e2fc3994e822ca9853c03561ca6eec.tar.gz</param>
+    <param name="update">false</param>
+    <param name="respect-lockfile">true</param>
+    <param name="compression">zst</param>
+  </service>
+</services>

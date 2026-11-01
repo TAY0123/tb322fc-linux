@@ -1,0 +1,6 @@
+{
+  "url": "https://gitlab.freedesktop.org/camera/libcamera.git",
+  "commit": "a6ef49cd8c4b280d74dcaedf99a754dc2018ad92",
+  "tree": "0c47716a95b8d0d347d618af50009f045c3382e4",
+  "patch": "patches/libcamera.patch"
+}

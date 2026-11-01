@@ -1,0 +1,89 @@
+--- a/freedom-kernel-update.py
++++ b/freedom-kernel-update.py
+@@ -124,7 +124,7 @@
+ 
+ 
+ def backup_kernel(release, modules, state):
+-    """Keep modules as well as boot bytes before pacman removes an old release."""
++    """Keep modules as well as boot bytes before RPM removes an old release."""
+     directory = state / 'rollback' / release
+     if (directory / 'backup.json').exists():
+         return
+@@ -147,20 +147,28 @@
+     print('Saved kernel rollback files:', directory)
+ 
+ 
++def kernel_metadata(config, modules):
++    """Only use the versioned inputs owned by the installed Freedom RPM."""
++    path = modules / 'tb322fc-build.json'
++    if not path.is_file():
++        return None
++    data = json.loads(path.read_text())
++    if data['package'] != config['pkgbase']:
++        return None
++    if data['release'] != modules.name:
++        raise ValueError('Kernel metadata does not match the module directory')
++    owner = subprocess.run(['rpm', '-qf', '--qf', '%{NAME}\\n', '--', str(path)],
++                           capture_output=True, text=True, timeout=10)
++    if owner.returncode == 1:
++        return None
++    owner.check_returncode()
++    return data if owner.stdout.strip() == config['pkgbase'] else None
++
++
+ def installed_kernel_releases(config, module_root=Path('/usr/lib/modules')):
+-    """Ignore retained rollback trees when a module-only hook has no release."""
+-    releases = set()
+-    for path in module_root.glob('*/pkgbase'):
+-        if path.read_text().strip() != config['pkgbase']:
+-            continue
+-        owner = subprocess.run(['pacman', '-Qqo', '--', str(path)],
+-                               capture_output=True, text=True, timeout=10)
+-        if owner.returncode == 1:  # Preserved module tree, no installed package.
+-            continue
+-        owner.check_returncode()
+-        if owner.stdout.strip() == config['pkgbase']:
+-            releases.add(path.parent.name)
+-    return releases
++    """Ignore retained rollback trees which no longer belong to an RPM."""
++    return {path.parent.name for path in module_root.glob('*/tb322fc-build.json')
++            if kernel_metadata(config, path.parent) is not None}
+ 
+ 
+ def main():
+@@ -204,7 +212,7 @@
+             if not re.fullmatch(r'[A-Za-z0-9_.+\-]+', release):
+                 raise ValueError('Invalid kernel release')
+             modules = Path('/usr/lib/modules') / release
+-            if (modules / 'pkgbase').exists() and (modules / 'pkgbase').read_text().strip() == config['pkgbase']:
++            if kernel_metadata(config, modules) is not None:
+                 backup_kernel(release, modules, state)
+         return
+     lib = Path('/usr/lib/kshim-freedom')
+@@ -218,7 +226,8 @@
+         if not re.fullmatch(r'[A-Za-z0-9_.+\-]+', release):
+             raise ValueError('Invalid kernel release')
+         modules = Path('/usr/lib/modules') / release
+-        if not (modules / 'pkgbase').exists() or (modules / 'pkgbase').read_text().strip() != config['pkgbase']:
++        metadata = kernel_metadata(config, modules)
++        if metadata is None:
+             continue
+         # If the configured external module failed to build, retain the old boot.
+         for module in config.get('required_modules', []):
+@@ -230,14 +239,14 @@
+         unsigned = directory / 'unsigned'
+         run([sys.executable, lib / 'build-kshim-arch.py', '--manifest', lib / 'freedom-sources.json',
+              '--builder', lib / 'kshim-build-boot.py', '--stock-boot', stock, '--runtime', lib / 'kShimC.bin',
+-             '--image', modules / 'vmlinuz', '--dtb', modules / 'dtbs/qcom/sm8750-lenovo-elden.dtb',
++             '--image', Path('/boot') / ('Image-' + release),
++             '--dtb', Path('/boot') / ('dtb-' + release) / 'qcom/sm8750-lenovo-elden.dtb',
+              '--initrd', initrd, '--packer', lib / 'MultiBootKernelPatcher', '--unpacker', lib / 'UnpackTool',
+              '--repacker', lib / 'repack_boot_v4.py', '--avbtool', lib / 'avbtool.py',
+              '--root-partuuid', config['root_partuuid'], '--cmdline', config['cmdline'], '--out', unsigned])
+         image = directory / 'signed/boot.img'
+         run([sys.executable, lib / 'sign-kshim-boot.py', '--image', unsigned / 'arch/boot.img',
+              '--stock-boot', stock, '--key', key, '--out', image, '--avbtool', lib / 'avbtool.py'])
+-        metadata = json.loads((modules / 'build-manifest.json').read_text())
+         result = dict(release=release, kernel_build_id=metadata['build_id'], image=str(image), sha256=digest(image), deployed=False)
+         if not args.stage_only and (args.deploy or config.get('deploy_boot_a', False)):
+             result['flash'] = deploy(image, config, directory)

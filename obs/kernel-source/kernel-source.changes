@@ -1,0 +1,11 @@
+-------------------------------------------------------------------
+Sat Oct 31 16:20:00 UTC 2026 - h0cheung <hcheunh@gmail.com>
+
+- Enable QFMT_V2 for the internal quota files in the TWRP-style F2FS root.
+- Enable IPv4, IPv6 and inet nftables FIB expressions used by firewalld.
+
+-------------------------------------------------------------------
+Sat Oct 31 09:00:00 UTC 2026 - h0cheung <hcheunh@gmail.com>
+
+- Add TB322FC Freedom flavor with the maintained device patches.
+- Reuse official kernel sources, development packages and KMP macros.
