@@ -111,11 +111,13 @@ for name in ('kernel-source','kernel-freedom','kernel-syms'):
         s=s.replace('\t--set-str CONFIG_LOCALVERSION -%source_rel-%build_flavor \\\n\t--enable  CONFIG_SUSE_KERNEL \\\n\t$CONFIG_SUSE_KERNEL_RELEASED \\\n\t$CONFIG_SUSE_HAVE_STABLE_KABI','\t--set-str CONFIG_LOCALVERSION -%source_rel-%build_flavor')
         # Restrict DTBs to this tablet; install in a versioned /boot directory.
         s=s.replace('make all $MAKE_ARGS','make Image modules qcom/sm8750-lenovo-elden.dtb $MAKE_ARGS')
-        s=s.replace('%files -f kernel-main.files','%files -f kernel-main.files\n/boot/dtb-%kernelrelease-%build_flavor\n%modules_dir/tb322fc-build.json',1)
+        s=s.replace('%files -f kernel-main.files','%files -f kernel-main.files\n/boot/dtb-%kernelrelease-%build_flavor\n%modules_dir/tb322fc-build.json\n%modules_dir/freedom-dpu-rotation',1)
         extra='''
 # Tablet boot inputs alongside the distro kernel image and configuration.
 cd %kernel_build_dir
 install -Dm644 arch/arm64/boot/dts/qcom/sm8750-lenovo-elden.dtb %buildroot/boot/dtb-%kernelrelease-%build_flavor/qcom/sm8750-lenovo-elden.dtb
+# Match the Arch package's versioned Gamescope capability check.
+printf '%s\\n' 'SM8750 inline rotation: split, allocation and clock fixes (Freedom 0224)' > %buildroot%modules_dir/freedom-dpu-rotation
 python3 - <<'METADATA'
 import json,re,subprocess
 from pathlib import Path

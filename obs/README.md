@@ -83,6 +83,15 @@ source/development packages plus the `freedom` flavor. `--publish` uploads the
 downstream link and patch archives; the kernel tarball is fetched by `_service`.
 ALS uses the standard KMP macros and waits for matching kernel development RPMs.
 
+The Freedom kernel RPM also owns the versioned
+`/usr/lib/modules/<release>/freedom-dpu-rotation` capability marker, matching
+the Arch recipe. Gamescope keeps GPU rotation as its default; after booting
+the matching kernel, set `Y700_ROTATION=dpu` in
+`~/.config/gamescope-session-plus/sessions.d/steam` and restart the game session
+to opt in. The marker alone does not enable DPU rotation. See the
+[device validation record](../docs/freedom-sync-20261029.md) for the expected
+DRM plane state and GPU fallback.
+
 The active project target profile is maintained in `project.conf`: native
 C/C++ uses `-mcpu=oryon-1+rng+fp16`, kernel/KMP builds pass the same CPU setting
 through `KCFLAGS`, and Rust uses `target-cpu=oryon-1` with `+rand,+fp16`.

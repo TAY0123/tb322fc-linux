@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Sun Nov  1 06:28:59 UTC 2026 - h0cheung <hcheunh@gmail.com>
+
+- Install the versioned freedom-dpu-rotation capability marker so an
+  explicit Y700_ROTATION=dpu request recognizes this supported kernel.
+
+-------------------------------------------------------------------
 Sat Oct 31 16:20:00 UTC 2026 - h0cheung <hcheunh@gmail.com>
 
 - Enable QFMT_V2 for the internal quota files in the TWRP-style F2FS root.

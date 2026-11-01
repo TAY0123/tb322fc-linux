@@ -501,6 +501,7 @@ The standard kernel for both uniprocessor and multiprocessor systems.
 %files -f kernel-main.files
 /boot/dtb-%kernelrelease-%build_flavor
 %modules_dir/tb322fc-build.json
+%modules_dir/freedom-dpu-rotation
 
 %if "%CONFIG_MODULES" == "y" && %split_base
 %package base
@@ -2101,6 +2102,8 @@ fi
 # Tablet boot inputs alongside the distro kernel image and configuration.
 cd %kernel_build_dir
 install -Dm644 arch/arm64/boot/dts/qcom/sm8750-lenovo-elden.dtb %buildroot/boot/dtb-%kernelrelease-%build_flavor/qcom/sm8750-lenovo-elden.dtb
+# Match the Arch package's versioned Gamescope capability check.
+printf '%s\n' 'SM8750 inline rotation: split, allocation and clock fixes (Freedom 0224)' > %buildroot%modules_dir/freedom-dpu-rotation
 python3 - <<'METADATA'
 import json,re,subprocess
 from pathlib import Path
