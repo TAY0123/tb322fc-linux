@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Service
+TryExec=steamos-add-to-steam
+MimeType=application/x-desktop;application/x-executable;application/x-pie-executable;application/vnd.appimage;application/x-iso9660-appimage;application/x-shellscript;text/x-shellscript;application/x-ms-dos-executable;application/x-msdownload;application/vnd.microsoft.portable-executable;
+Actions=addToSteam;
+X-KDE-RequiredNumberOfUrls=1
+X-KDE-Protocols=file
+
+[Desktop Action addToSteam]
+Name=Add to Steam
+Name[zh_CN]=添加到 Steam
+Name[zh_TW]=加入 Steam
+Icon=steam
+Exec=steamos-add-to-steam -ui -- %u

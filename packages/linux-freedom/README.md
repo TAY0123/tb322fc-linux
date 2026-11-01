@@ -4,7 +4,7 @@
 
 ## 从源码构建
 
-先在系统源码仓库运行 `python scripts/sync-freedom-packaging.py`，同步共享配置、Elden 兼容补丁和 ALS 源码的校验和。将本目录复制到 AArch64 构建环境，运行普通 `makepkg`。配方固定 Linux 7.2.6 和 Freedom commit，应用统一补丁及 Elden 扩展；本配方 release 为 `7.2.6-21-freedom`。升级通过 pkgver/pkgrel 和固定源码 commit 表达，不依赖工作目录的 dirty 标记。
+先在系统源码仓库运行 `python scripts/sync-freedom-packaging.py`，同步共享配置、Elden 兼容补丁和 ALS 源码的校验和。将本目录复制到 AArch64 构建环境，运行普通 `makepkg`。配方固定 Linux 7.2.6 和 Freedom commit，应用统一补丁及 Elden 扩展；本配方 release 为 `7.2.6-22-freedom`。升级通过 pkgver/pkgrel 和固定源码 commit 表达，不依赖工作目录的 dirty 标记。
 
 pkgrel 8 通过 Kbuild 的 `CONFIG_LTO_CLANG_THIN=y` 启用 ThinLTO；makepkg 的 `!lto` 保留，避免通用构建参数介入内核的 LTO 策略。配置合并和预编译输入打包均核对该选项，Image、模块和 headers 仍须使用同一次构建。ccache 继续缓存 Clang 的编译输出；完整 ThinLTO 构建和运行验证状态另行记录。
 
@@ -103,3 +103,19 @@ Freedom 固定至 `9788014a0293dc26745b000d02854ad88ef73e88`，纳入 0224 的�
 四代 DPU 实测发现最终带宽汇总仍使用已提交状态，导致高带宽双图层之后连降低带宽的提交也失败。本地 [0016](../../patches/freedom/0016-dpu-elden-check-pending-bandwidth.patch) 让 Elden 检查本次事务的新 CRTC 状态，保持原来的 28.5 GB/s 检查上限和提交后的总线投票。回归测试覆盖降带宽、拒绝超限首帧、DPMS 恢复、关闭以及多 CRTC 汇总。
 
 pkgrel 21 进一步加入 [0017](../../patches/freedom/0017-dpu-elden-candidate-plane-performance.patch)：按候选 plane 的实际几何和刷新率重算性能，解决缓存晚一帧更新的问题；Elden 旋转带宽按旋转后的扫描方向计算。原有硬件上限、prefill 和安全余量仍保留。生产 C 函数测试涵盖旋转方向、分数缩放、短消隐预取、图层删除和仅刷新率变化，实机结果见同步记录。
+
+## 调度与 MGLRU 改进（pkgrel 22）
+
+从 CachyOS 的 Linux 7.2 分支选择五个通用补丁，保留原始作者和提交信息；原补丁存放在 `patches/freedom/0018` 至 `0022`，由 `sync-recipe.py` 同步到配方目录。在 Freedom 和设备补丁之后依次应用：
+
+| 本地补丁 | 来源 | 作用 |
+| --- | --- | --- |
+| [0018](../../patches/freedom/0018-sched-fair-avoid-repeat-scan.patch) | [d7ea20441344](https://github.com/CachyOS/linux/commit/d7ea20441344fd9a347a70dcd09b5a418159732b) | 持有运行队列锁后设置扫描上限，避免负载均衡重复遍历任务 |
+| [0019](../../patches/freedom/0019-sched-inline-finish-task-switch.patch) | [01a771a66fd8](https://github.com/CachyOS/linux/commit/01a771a66fd8711b31c92f2446edf1e59cc9c5d0) | 内联任务切换收尾函数及其辅助函数 |
+| [0020](../../patches/freedom/0020-mm-folio-referenced-vma-flags.patch) | [30dd1cccbc66](https://github.com/CachyOS/linux/commit/30dd1cccbc66) | 将 folio 引用检查转换为 vma_flags_t，为后续补丁准备接口 |
+| [0021](../../patches/freedom/0021-mm-executable-folio-helper.patch) | [9d4aecaeb029](https://github.com/CachyOS/linux/commit/9d4aecaeb029) | 提取可执行文件页判定函数 |
+| [0022](../../patches/freedom/0022-mglru-protect-executable-folios.patch) | [7a19fefa2590](https://github.com/CachyOS/linux/commit/7a19fefa2590bb5f6f0cdff54a40ebf9a0661c45) | MGLRU 在可执行文件页首次使用后提升其回收保护级别 |
+
+MGLRU 改动针对文件支持的可执行页面，不等同于保护所有 FEX 匿名 JIT 页面。保留现有 HZ=250、THP=madvise 和其他调度参数；没有启用 CONFIG_CACHY 或替换调度器。
+
+2026-10-31 在上一版已准备源码的隔离副本上按配方顺序无 fuzz 应用五个补丁，使用相同 Clang 18 和 ThinLTO 配置成功编译 `kernel/sched/core.o`、`kernel/sched/fair.o`、`mm/rmap.o`、`mm/vmscan.o`，release 为 `7.2.6-22-freedom`。尚未完成新版本完整内核链接或实机测试，性能收益未测量。

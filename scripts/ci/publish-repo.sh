@@ -71,7 +71,7 @@ if (( ${#upload_list[@]} )); then
     gh release upload "$TAG" --repo "$SLUG" --clobber "${upload_list[@]}"
 fi
 
-# Drop superseded assets (for example yesterday's -git mesa build) so the
+# Drop superseded assets (for example an older package version) so the
 # release only ever holds the current package set.
 for name in "${existing[@]}"; do
     [[ -n "$name" && -z "${keep[$name]:-}" ]] || continue

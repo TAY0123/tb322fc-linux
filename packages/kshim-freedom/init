@@ -89,6 +89,14 @@ case "$root_info" in
     *' TYPE="f2fs"'*) root_fstype=f2fs ;;
     *) fail "rootfs must contain ext4 or f2fs" ;;
 esac
+# systemd-remount-fs runs before udev has populated the persistent device
+# links. Publish the already verified root UUID for an fstab UUID= entry.
+root_uuid=$(printf '%s\n' "$root_info" | "$BB" sed -n 's/.* UUID="\([^"]*\)".*/\1/p')
+case "$root_uuid" in
+    ''|*[!a-fA-F0-9-]*) fail "invalid rootfs UUID" ;;
+esac
+"$BB" mkdir -p /dev/disk/by-uuid
+"$BB" ln -sf "../../${root_device##*/}" "/dev/disk/by-uuid/$root_uuid" || fail "link rootfs UUID"
 "$BB" mount -t "$root_fstype" -o rw,noatime,errors=remount-ro "$root_device" /newroot || fail "mount rootfs"
 [ -x /newroot/sbin/init ] || fail "rootfs lacks /sbin/init"
 "$BB" mount -t tmpfs -o mode=0755,nosuid,nodev tmpfs /run || fail "mount run"

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build a Gen4 kShim candidate for a plain Arch root, without device writes."""
+"""Build a Gen4 kShim image for an explicit Linux root, without device writes."""
 import argparse
 import hashlib
 import json
@@ -24,7 +24,9 @@ def main():
     parser.add_argument("--manifest", type=Path, default=source_manifest)
     for name in ["stock-boot", "runtime", "image", "dtb", "initrd", "packer", "unpacker", "repacker", "avbtool", "out"]:
         parser.add_argument("--" + name, type=Path, required=True)
-    parser.add_argument("--root-partuuid", required=True)
+    selector = parser.add_mutually_exclusive_group(required=True)
+    selector.add_argument("--root-partuuid")
+    selector.add_argument("--root-partlabel", choices=['rootfs'])
     parser.add_argument("--header-template", type=Path,
                         help="Override the device-tested header profile with metadata from this Android v4 image")
     parser.add_argument("--cmdline", required=True)
@@ -34,11 +36,12 @@ def main():
     expected = manifest["freedom"]["kshim_builder_sha256"]
     if hashlib.sha256(original).hexdigest() != expected:
         parser.error("Freedom builder differs from the pinned source manifest")
-    root_uuid = str(uuid.UUID(args.root_partuuid))
+    root_uuid = str(uuid.UUID(args.root_partuuid)) if args.root_partuuid else None
+    root_selector = "PARTUUID=" + root_uuid if root_uuid else "PARTLABEL=rootfs"
     if any(c in args.cmdline for c in "\x00\r\n"):
         parser.error("cmdline must be one line")
     tokens = [x for x in args.cmdline.split() if not x.startswith("root=")]
-    tokens.append("root=PARTUUID=" + root_uuid)
+    tokens.append("root=" + root_selector)
     cmdline = " ".join(tokens)
     # Keep upstream source intact; apply the reviewed Arch-layout delta.
     patches = []
@@ -57,7 +60,7 @@ def main():
         command = [sys.executable, str(builder), "--layout", "maintenance",
                    "--default-entry", "maintenance", "--linux-image", str(args.image.resolve()),
                    "--dtb", str(args.dtb.resolve()), "--initrd", str(args.initrd.resolve()),
-                   "--bootargs", cmdline, "--source-label", "Arch Linux Ports / Freedom compatibility"]
+                   "--bootargs", cmdline, "--source-label", "TB322FC Linux / Freedom compatibility"]
         for name in ["stock-boot", "runtime", "packer", "unpacker", "repacker", "avbtool", "out"]:
             command += ["--" + name, str(getattr(args, name.replace("-", "_")).resolve())]
         subprocess.run(command, check=True)
@@ -104,8 +107,9 @@ def main():
         "freedom_commit": manifest["freedom"]["commit"],
         "builder_sha256": expected,
         "root_partuuid": root_uuid,
+        "root_selector": root_selector,
         "bootargs": cmdline,
-        "layout": "plain Arch root with explicit Linux/DTB/initramfs payloads",
+        "layout": "Linux root with explicit kernel/DTB/initramfs payloads",
         "linux_menu_name": "机身 Linux",
         "boot_stage": "os",
         "root_medium": "internal",

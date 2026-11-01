@@ -52,6 +52,49 @@ fi
 # CEF remote debugging endpoint for the client, as SteamOS does.
 touch "${steam_root}/.cef-enable-remote-debugging"
 cd "${steam_arm_dir}"
-exec "${steam_arm}" \
-    "${steam_args[@]}" \
-    "$@"
+# Steam exits 42 to request a restart after an update. Keep the Gamescope
+# session alive for that request, while preserving normal exits and signals.
+# Adapted from ArmadaOS Freedom cafd1cc (Steam OOBE restart supervision).
+child_pid=
+pending_signal=0
+
+forward_signal() {
+    pending_signal=$1
+    if [[ -n ${child_pid} ]]; then
+        kill -s "$2" "${child_pid}" 2>/dev/null || true
+    fi
+}
+
+trap 'forward_signal 15 TERM' TERM
+trap 'forward_signal 2 INT' INT
+trap 'forward_signal 1 HUP' HUP
+
+while (( pending_signal == 0 )); do
+    "${steam_arm}" "${steam_args[@]}" "$@" &
+    child_pid=$!
+    if (( pending_signal != 0 )); then
+        kill -s TERM "${child_pid}" 2>/dev/null || true
+    fi
+
+    # A signal interrupts wait. Reap the child before returning, even if the
+    # child itself responds to termination with the restart exit code.
+    while :; do
+        status=0
+        wait "${child_pid}" || status=$?
+        if (( pending_signal != 0 )) && kill -0 "${child_pid}" 2>/dev/null; then
+            continue
+        fi
+        break
+    done
+    child_pid=
+    if (( pending_signal != 0 )); then
+        exit $(( 128 + pending_signal ))
+    fi
+    if (( status == 42 )); then
+        printf 'Steam requested a restart; relaunching\n' >&2
+        continue
+    fi
+    exit "${status}"
+done
+
+exit $(( 128 + pending_signal ))

@@ -6,7 +6,7 @@ pkgdesc='Native kShim tools and atomic kernel deployment for Freedom on Elden'
 arch=(aarch64)
 license=(GPL-3.0-or-later)
 options=(!strip !debug !lto)
-depends=(python openssl dtc cpio gzip kmod util-linux zstd xz)
+depends=(python openssl dtc cpio gzip kmod util-linux zstd xz patch)
 makedepends=(git cmake ninja gcc make python-kconfiglib)
 _freedom_commit=9788014a0293dc26745b000d02854ad88ef73e88
 # Retain the validated launcher; later upstream enables native UFS settings I/O.
@@ -53,10 +53,10 @@ sha256sums+=(
   '82310d3378dcb7766b3522649ac9a50ae51af118fe7a1d7c1281d31baee2563f'
   '874be0c26d1a76a288cd76eee134d50b1542c8ba3a3691f045cfac67cae13b29'
   'ceb2971f7e88fc05e6da25aad6ee81555f1207cc2387de0fe0be9d4432d8e267'
-  '32d7f02e81da49d97d1345c7fc5f83b4e25c1a1f7a048b0b9870b1f9c93e7cd8'
+  '8eefec2a0346cb9dfc9084538dd6490f85d19087d518f263b09f670283c4cd89'
   'e168d527e3774a5cabee4bff1fda887940a41ccdbf4695bc27b6d90430fc438a'
   'ff87a71c77831aa5b8602a08137ec43daa2589f6bbf9746fcbdd501d73309258'
-  'dd47582dee94f757c9a4050f11a515b12114c9ac3e4215403db806fbf99f55cd'
+  '6b3c682cf92bc99c75e4dfe453991fe71b8159798bb54c775fc47bfa8b7ec28f'
   'd958b0a8790ab04525c958af20ecebb30734cce5f4d58701d1343deb6372881c'
   'e00d9e3aa3e183b4ecce1651df0ba9ac3ad76e36425cd5ee9361a7bb47fdb3a4'
   '458851f4bd96ceceebf773bfd2fc6ebfe21c81d09073d64a5a2e618576b16b01'

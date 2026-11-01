@@ -24,7 +24,14 @@ inputs = [
     ('patches/freedom/0016-dpu-elden-check-pending-bandwidth.patch', 'elden-dpu-atomic-bandwidth.patch'),
     ('patches/freedom/0017-dpu-elden-candidate-plane-performance.patch', 'elden-dpu-plane-performance.patch'),
 ]
-for source, name in inputs:
+performance_inputs = [
+    ('patches/freedom/0018-sched-fair-avoid-repeat-scan.patch', 'sched-fair-avoid-repeat-scan.patch'),
+    ('patches/freedom/0019-sched-inline-finish-task-switch.patch', 'sched-inline-finish-task-switch.patch'),
+    ('patches/freedom/0020-mm-folio-referenced-vma-flags.patch', 'mm-folio-referenced-vma-flags.patch'),
+    ('patches/freedom/0021-mm-executable-folio-helper.patch', 'mm-executable-folio-helper.patch'),
+    ('patches/freedom/0022-mglru-protect-executable-folios.patch', 'mglru-protect-executable-folios.patch'),
+]
+for source, name in inputs + performance_inputs:
     shutil.copyfile(repo / source, here / name)
 hashes = [hashlib.sha256((here / name).read_bytes()).hexdigest() for name in
           ['freedom-compat.config', 'prepare-source.py',
@@ -44,6 +51,7 @@ values = ['039aef84f2b0994aeda3f4fcfc3d02ec9d7a9bbb9020ea264c43f446c860f606',
     'fd6069f5ac61c642bd7d1b402a88d74cb00aab7f353802d22b953dc9a8aee8ee',  # Upstream UFS internal-command error-recovery fix.
     'bb78efdb9ab3511afa27f1da87d10771655afd972a9521ef70ec2a89a94bd7b7',  # SunUEFI Iris PSC_LAST fix.
     'c0080c1fa0365c8dbf05c588d5dc288b36d2739c1052e47ef463f27bdabc5095',  # SunUEFI Iris deinit IRQ ordering.
-]
+] + [hashlib.sha256((here / name).read_bytes()).hexdigest()
+     for _, name in performance_inputs]
 s = s[:start] + '  sha256sums=(' + '\n              '.join(repr(x) for x in values) + ')' + s[end:]
 p.write_text(s)

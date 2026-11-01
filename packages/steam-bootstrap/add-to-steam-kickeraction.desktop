@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Service
+TryExec=steamos-add-to-steam
+Actions=addToSteam;
+
+[Desktop Action addToSteam]
+Name=Add to Steam
+Name[zh_CN]=添加到 Steam
+Name[zh_TW]=加入 Steam
+Icon=steam
+Exec=steamos-add-to-steam -ui -- %u

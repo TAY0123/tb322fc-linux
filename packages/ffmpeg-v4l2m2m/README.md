@@ -30,3 +30,32 @@ Arch's [Vivaldi codec recipe](https://gitlab.archlinux.org/archlinux/packaging/p
 builds a selected set of software codecs from Chromium's FFmpeg fork into
 `/opt/vivaldi/libffmpeg.so.<browser-major>`. Replacing that library requires
 a matching Chromium build; its preload path does not enable these V4L2 fixes.
+
+## openSUSE hardware decoder build
+
+`obs/ffmpeg-v4l2m2m` inherits the reduced official FFmpeg 9 recipe and adds
+only `h264_v4l2m2m` and `hevc_v4l2m2m` to its decoder allowlist. These wrappers
+send compressed video to the kernel Iris driver; they do not depend on Mesa,
+libx264 or libx265. Native H.264/HEVC and OpenH264 software decoders are disabled.
+Build checks require both V4L2 decoders and reject libx264, libx265 or nonfree
+configuration. Existing official encoder settings and dependencies stay intact.
+This does not enable codec support in Chromium's separate FFmpeg build.
+
+On TB322FC with kernel `7.2.6-28-freedom`, a standalone build with the same
+three V4L2 patches passed FFmpeg's reference frame checksums for H.264 Baseline
+(299 frames), H.264 Main (50), HEVC Main (30) and HEVC Main10 (8, using P010
+capture). Automatic decoder selection also worked. Two ordinary H.264 High
+MP4 files decoded fully; concatenating their elementary streams exercised
+432x240 -> 1280x720 -> 432x240 and decoded all 1,240 frames.
+
+A separate Baseline -> Main -> Baseline conformance-stream concatenation
+failed at the first transition with an Iris firmware session error. The test
+changes both profile and resolution, so it does not isolate the cause; do not
+treat arbitrary in-stream profile changes as supported. Fresh sessions decoded
+normally afterward. Validation logs are under
+`build/opensuse-rootfs/ffmpeg-hwonly-20261101/`.
+
+The OBS `9.0.2-4.1` RPMs were subsequently installed and passed the same
+reference checks, automatic decoder selection, MP4 and High-profile resolution
+change tests, with no new kernel messages. The runtime RPM dependencies contain
+neither libx264 nor libx265; the official OpenH264 encoder dependency remains.

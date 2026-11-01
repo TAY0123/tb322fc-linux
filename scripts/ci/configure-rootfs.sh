@@ -352,8 +352,6 @@ release=$(cat /usr/share/tb322fc/kernel.release)
 # into --allsource output - it never imports them into a keyring, so without
 # this the first signed source fails with "unknown public key
 # 8D8E31AFC32428A6". Import as alarm, since that is who runs makepkg.
-# The -git build tracks mesa main over git and has no detached signature, so it
-# needs none of this; importing any present keys is harmless either way.
 shopt -s nullglob
 key_files=(packages/*/keys/pgp/*.asc)
 shopt -u nullglob
@@ -362,7 +360,7 @@ if (( ${#key_files[@]} )); then
         sudo -u alarm gpg --batch --no-tty --quiet --import "$key_file"
     done
 else
-    echo "no PGP keys under packages/*/keys/pgp; skipping import (fine for -git)"
+    echo "no PGP keys under packages/*/keys/pgp; skipping import"
 fi
 
 # Query the project rolling package repository (configured above) to check which
@@ -379,9 +377,9 @@ declare -A pkg_fullver=()
 declare -A pkg_splits=()
 for pkg_dir in packages/*/; do
     [[ -f "$pkg_dir/PKGBUILD" ]] || continue
-    # Stable and development Mesa provide the same files; build only stable.
+    # Boot-related packages are handled separately.
     case "$pkg_dir" in
-        packages/mesa-y700-gen4-git/|packages/linux-freedom/|packages/als-bridge-dkms/|packages/kshim-freedom/) continue ;;
+        packages/linux-freedom/|packages/als-bridge-dkms/|packages/kshim-freedom/) continue ;;
     esac
     mapfile -t info < <(sudo -u alarm bash -c \
         "source '$pkg_dir/PKGBUILD' && _fv=\"\$pkgver-\$pkgrel\"; (( \${epoch:-0} > 0 )) && _fv=\"\$epoch:\$_fv\"; _dyn=0; declare -F pkgver >/dev/null && _dyn=1; printf '%s\n%s\n%s\n%s\n%s\n' \"\${pkgname[0]}\" \"\$_fv\" \"\${depends[*]} \${makedepends[*]} \${checkdepends[*]}\" \"\${pkgname[*]}\" \"\$_dyn\"")

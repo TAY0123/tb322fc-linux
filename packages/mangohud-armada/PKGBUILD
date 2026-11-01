@@ -10,7 +10,7 @@
 #
 # Renamed build: the package carries -armada and stands in for "mangohud" via
 # provides/conflicts/replaces, so a rolling Arch Linux Ports update cannot clobber
-# the patched overlay (same scheme as mesa-y700-gen4-git and gamescope-armada).
+# the patched overlay (same scheme as mesa-y700-gen4 and gamescope-armada).
 _pkgname=MangoHud
 pkgname=mangohud-armada
 pkgver=0.8.4

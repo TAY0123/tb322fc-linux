@@ -1,0 +1,96 @@
+#!/usr/bin/python3
+# SPDX-License-Identifier: GPL-2.0-or-later
+"""Add a local application through Steam's non-Steam-game URI handler.
+
+Desktop integration follows CachyOS/CachyOS-Handheld's steamos-add-to-steam.
+Paths are passed as data, never interpolated into shell or Python source.
+"""
+import argparse
+import os
+from pathlib import Path
+import stat
+import subprocess
+import sys
+from urllib.parse import quote_from_bytes, unquote_to_bytes, urlsplit
+
+
+DESKTOP_OR_WINDOWS = {
+    "application/x-desktop",
+    "application/x-ms-dos-executable",
+    "application/x-msdownload",
+    "application/vnd.microsoft.portable-executable",
+}
+NATIVE_EXECUTABLES = {
+    "application/x-executable",
+    "application/x-pie-executable",
+    "application/vnd.appimage",
+    "application/x-iso9660-appimage",
+    "application/x-shellscript",
+    "text/x-shellscript",
+}
+
+
+def local_file(value):
+    if value.startswith("file:"):
+        uri = urlsplit(value)
+        if uri.netloc not in ("", "localhost") or uri.query or uri.fragment:
+            raise ValueError("Only local file URLs are supported.")
+        value = os.fsdecode(unquote_to_bytes(uri.path))
+    elif "://" in value:
+        raise ValueError("Download the application to a local folder first.")
+    path = Path(value).resolve(strict=True)
+    if not path.is_file():
+        raise ValueError("Select an application file, not a folder.")
+    return path
+
+
+def steam_url(value):
+    path = local_file(value)
+    mime = subprocess.run(
+        ["/usr/bin/kmimetypefinder", str(path)],
+        check=True, capture_output=True, text=True,
+    ).stdout.strip()
+    if mime in NATIVE_EXECUTABLES:
+        if not os.access(path, os.X_OK):
+            raise ValueError("The application is not executable. Enable execution in its file permissions first.")
+    elif mime not in DESKTOP_OR_WINDOWS:
+        raise ValueError(f"Unsupported file type: {mime or 'unknown'}")
+    return "steam://addnonsteamgame/" + quote_from_bytes(os.fsencode(path), safe="")
+
+
+def prepare_steam_marker():
+    # SteamOS uses this marker before invoking the addnonsteamgame handler.
+    # Do not follow links or block on a special file in the shared /tmp folder.
+    fd = os.open("/tmp/addnonsteamgamefile",
+                 os.O_WRONLY | os.O_CREAT | os.O_NOFOLLOW | os.O_NONBLOCK, 0o600)
+    try:
+        info = os.fstat(fd)
+        if not stat.S_ISREG(info.st_mode) or info.st_uid != os.getuid():
+            raise ValueError("Steam's add-game marker is not a regular file owned by this user.")
+        os.utime(fd, None)
+    finally:
+        os.close(fd)
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("-ui", "--ui", action="store_true", help="Show errors in a KDE dialog")
+    parser.add_argument("file", help="Local application path or file:// URL")
+    args = parser.parse_args(argv)
+    try:
+        if os.getuid() == 0:
+            raise ValueError("Run Add to Steam as your desktop user, not as root.")
+        url = steam_url(args.file)
+        prepare_steam_marker()
+        subprocess.run(["/usr/bin/steam", url], check=True)
+    except (OSError, ValueError, subprocess.CalledProcessError) as error:
+        message = str(error)
+        print(f"Add to Steam: {message}", file=sys.stderr)
+        if args.ui and os.getuid() != 0:
+            subprocess.run(["/usr/bin/kdialog", "--title", "Add to Steam", "--error", message], check=False)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

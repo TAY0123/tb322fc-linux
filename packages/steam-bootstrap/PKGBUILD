@@ -3,12 +3,12 @@
 # the bundled Valve Steam client keeps Valve's own terms).
 pkgname=steam-bootstrap
 pkgver=1788652215
-pkgrel=5
+pkgrel=7
 pkgdesc="Fetch and bootstrap Valve's official ARM64 Steam client into the user's home"
 arch=('aarch64')
 url="https://github.com/armada-os/armada"
 license=('GPL-2.0-or-later')
-depends=('python' 'curl' 'unzip' 'xorg-server-xvfb' 'file' 'gtk2' 'openal' 'lsof')
+depends=('python' 'curl' 'unzip' 'xorg-server-xvfb' 'file' 'gtk2' 'openal' 'lsof' 'kde-cli-tools' 'kdialog')
 # The manifest pins every client package by SHA256, so the bootstrap state is
 # reproducible; the client self-updates from Valve afterwards. Bump pkgver (and
 # steam-bootstrap.env) to re-pin.
@@ -21,8 +21,14 @@ source=(
     'launch-steam'
     'steam'
     'steam.desktop'
+    'steamos-add-to-steam'
+    'add-to-steam-servicemenu.desktop'
+    'add-to-steam-kickeraction.desktop'
 )
 sha256sums=(
+    'SKIP'
+    'SKIP'
+    'SKIP'
     'SKIP'
     'SKIP'
     'SKIP'
@@ -50,4 +56,9 @@ package() {
     install -m755 "$srcdir/steam" "$pkgdir/usr/bin/steam"
     install -m644 "$srcdir/steam.desktop" \
         "$pkgdir/usr/share/applications/steam.desktop"
+    install -m755 "$srcdir/steamos-add-to-steam" "$pkgdir/usr/bin/steamos-add-to-steam"
+    install -Dm644 "$srcdir/add-to-steam-servicemenu.desktop" \
+        "$pkgdir/usr/share/kio/servicemenus/tb322fc-add-to-steam.desktop"
+    install -Dm644 "$srcdir/add-to-steam-kickeraction.desktop" \
+        "$pkgdir/usr/share/plasma/kickeractions/tb322fc-add-to-steam.desktop"
 }

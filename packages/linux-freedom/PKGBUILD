@@ -3,7 +3,7 @@
 pkgbase=linux-freedom
 pkgname=(linux-freedom linux-freedom-headers)
 pkgver=7.2.6
-pkgrel=21
+pkgrel=22
 pkgdesc='Linux with ArmadaOS Freedom hardware support'
 arch=(aarch64)
 url='https://github.com/mydanyi/armadaos-freedom'
@@ -28,6 +28,11 @@ _elden_patches=(elden-usb-suspend.patch
                 ufs-clock-scaling.patch
                 elden-dpu-atomic-bandwidth.patch
                 elden-dpu-plane-performance.patch)
+_performance_patches=(sched-fair-avoid-repeat-scan.patch
+                      sched-inline-finish-task-switch.patch
+                      mm-folio-referenced-vma-flags.patch
+                      mm-executable-folio-helper.patch
+                      mglru-protect-executable-folios.patch)
 export LOCALVERSION=
 export KBUILD_BUILD_USER=linux-freedom
 export KBUILD_BUILD_HOST=archlinux
@@ -50,7 +55,8 @@ else
           elden-host-power-lost.patch "${_elden_patches[@]}"
           "ufs-internal-commands.patch::https://github.com/torvalds/linux/commit/b52d695d062095327b944acf7daabbc816ab319b.patch"
           "iris-psc-last.patch::https://raw.githubusercontent.com/slwyts/Project-SunUEFI/be3073644216a413776b973203d4222e8950703a/patches/linux/7.2.9/0046-media-iris-psc-last.patch"
-          "iris-deinit-irq.patch::https://raw.githubusercontent.com/slwyts/Project-SunUEFI/be3073644216a413776b973203d4222e8950703a/patches/linux/7.2.9/0047-media-iris-deinit-irq-lock.patch")
+          "iris-deinit-irq.patch::https://raw.githubusercontent.com/slwyts/Project-SunUEFI/be3073644216a413776b973203d4222e8950703a/patches/linux/7.2.9/0047-media-iris-deinit-irq-lock.patch"
+          "${_performance_patches[@]}")
   # Local input hashes are refreshed by sync-recipe.py after source changes.
   sha256sums=('039aef84f2b0994aeda3f4fcfc3d02ec9d7a9bbb9020ea264c43f446c860f606'
               'SKIP'
@@ -79,7 +85,12 @@ else
               '3acd80aa7a1d416549469c063c7018c6ccc1c600bb5eacc3c3c06935ab96978d'
               'fd6069f5ac61c642bd7d1b402a88d74cb00aab7f353802d22b953dc9a8aee8ee'
               'bb78efdb9ab3511afa27f1da87d10771655afd972a9521ef70ec2a89a94bd7b7'
-              'c0080c1fa0365c8dbf05c588d5dc288b36d2739c1052e47ef463f27bdabc5095')
+              'c0080c1fa0365c8dbf05c588d5dc288b36d2739c1052e47ef463f27bdabc5095'
+              '2890798993a07e7d92ad6659b4cb2e8ba217c721575f08070ffa37a0203c6cc0'
+              '68293d63c4c82e5a74e197e63c7d35ccf4b646ad911c6956a6e97f5e3bc6a6f7'
+              '1e2d3f821e840ef56ba2ec8abc8e9dcc225200aeb25a9c71ebf61f126c85fe9b'
+              'c09106457c746d2f09490730715c7303d2e96bb0f70f8f681ac962b45326858c'
+              '683e9a1bc47c981d406a9891125fef978a03ed6807c833a39631393530b2e0a6')
 fi
 
 prepare() {
@@ -89,7 +100,8 @@ prepare() {
     "$srcdir/q6v5-handover-one-shot.patch" \
     "$srcdir/q6v5-attach-keep-handover-masked.patch" "$srcdir/tools-u128-types.patch" \
     "$srcdir/elden-host-power-lost.patch" "${_elden_patches[@]/#/$srcdir/}" "$srcdir/ufs-internal-commands.patch" \
-    "$srcdir/iris-psc-last.patch" "$srcdir/iris-deinit-irq.patch"
+    "$srcdir/iris-psc-last.patch" "$srcdir/iris-deinit-irq.patch" \
+    "${_performance_patches[@]/#/$srcdir/}"
   echo "-$pkgrel" > localversion.10-pkgrel
   echo '-freedom' > localversion.20-pkgname
   mkdir -p "$srcdir/build"

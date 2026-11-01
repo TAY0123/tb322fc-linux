@@ -3,7 +3,7 @@
 # arch += aarch64 - the loader is pure python + a JS frontend, and it
 # injects through CEF remote debugging, so nothing here is arch-bound.
 pkgname=decky-loader
-pkgver=3.2.10_pre1
+pkgver=3.3.1
 pkgrel=1
 pkgdesc="Homebrew plugin launcher for the Steam Deck UI (aarch64 build)"
 arch=('x86_64' 'aarch64')
@@ -13,12 +13,12 @@ provides=('decky-loader')
 conflicts=('decky-loader')
 depends=('python' 'python-aiohttp' 'python-aiohttp-jinja2' 'python-aiohttp-cors'
   'python-watchdog' 'python-certifi' 'python-packaging' 'python-multidict'
-  'python-setproctitle')
+  'python-setproctitle' 'psmisc')
 makedepends=('pnpm' 'python-poetry' 'python-installer' 'git')
 source=("$pkgname-$pkgver.tar.gz::$url/archive/v${pkgver/_/-}.tar.gz"
   "decky-loader@.service"
   "decky-loader-helper")
-sha256sums=('SKIP'
+sha256sums=('8c102ef54c7be4b2505564850e865c124f85712e5636b164bc73134ecf0a5813'
             '068f91eba3ead7fce3384d208d743acdf8ed22c0daea6d13645ff3edf7a754eb'
             '57ad5807a25f39777569982a632a87bce41c5b25d25f3a82168a14cced359f48')
 

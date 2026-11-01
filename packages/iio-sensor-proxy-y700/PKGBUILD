@@ -2,7 +2,7 @@
 # Y700 Gen4 (tb322fc-linux): iio-sensor-proxy built from the pinned upstream
 # tree plus the device patch, renamed so it stands in for the repo package via
 # exact-version provides + conflicts/replaces - the same scheme as
-# mesa-y700-gen4-git. The repo package is pulled in as a dependency of
+# mesa-y700-gen4. The repo package is pulled in as a dependency of
 # powerdevil, so a plain source build (the old build_component step) was
 # silently reverted whenever the package was reinstalled or upgraded.
 #

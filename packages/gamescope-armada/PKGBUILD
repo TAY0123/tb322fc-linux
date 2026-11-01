@@ -19,7 +19,7 @@
 #
 # Renamed build: the package carries -armada and stands in for "gamescope" via
 # provides/conflicts/replaces, so a rolling Arch Linux Ports update cannot clobber
-# the patched compositor (same scheme as mesa-y700-gen4-git). The file capabilities
+# the patched compositor (same scheme as mesa-y700-gen4). The file capabilities
 # are applied by the rootfs tmpfiles entry, not here, because makepkg runs
 # unprivileged.
 _pkgname=gamescope
