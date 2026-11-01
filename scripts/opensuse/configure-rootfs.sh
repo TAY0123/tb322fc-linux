@@ -64,6 +64,7 @@ ConditionPathExists=/var/lib/hexagonrpc/sensors/state/sns_reg_version
 ConditionPathExists=/var/lib/hexagonrpc/sensors/sns_reg.conf
 EOF
 done
+install -Dm755 "$overlay/power/hud-temps.sh" /usr/local/bin/hud-temps.sh
 install -Dm755 "$overlay/power/armada-steam-charging-eta" /usr/libexec/armada/armada-steam-charging-eta
 install -Dm644 "$overlay/power/armada-steam-charging-eta.service" /usr/lib/systemd/user/armada-steam-charging-eta.service
 install -Dm644 "$overlay/power/gamescope-session-plus@steam.service.d/20-armada-steam-charging-eta.conf" \
@@ -196,6 +197,8 @@ Defaults:%wheel !targetpw
 EOF
 chmod 440 /etc/sudoers.d/90-tb322fc-wheel
 visudo -cf /etc/sudoers.d/90-tb322fc-wheel
+# Armada owns the global/per-game scheduler; avoid a second scx instance.
+systemctl --root=/ disable scx.service
 systemctl --root=/ enable NetworkManager bluetooth sshd chronyd hexagonrpcd-sensors plasma-setup tb322fc-first-user.path \
     als-bridge armada-powerd steamos-manager armada-control inputplumber \
     tb322fc-hall-lid tb322fc-gyro-bridge y700-charged

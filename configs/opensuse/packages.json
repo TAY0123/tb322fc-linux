@@ -57,6 +57,7 @@
     "google-noto-sans-cjk-fonts",
     "ibus",
     "ibus-libpinyin",
+    "scx",
     "vulkan-tools",
     "Mesa-demo-x",
     "sddm-qt6-branding-openSUSE",
@@ -120,7 +121,8 @@
     "plasma6-setup",
     "plasma6-setup-lang",
     "plymouth",
-    "plymouth-defaults-tb322fc"
+    "plymouth-defaults-tb322fc",
+    "msime"
   ],
   "obs_builds": [
     "kernel-source",
@@ -170,7 +172,8 @@
     "gtk2",
     "plasma6-setup",
     "plymouth",
-    "plymouth-defaults-tb322fc"
+    "plymouth-defaults-tb322fc",
+    "msime"
   ],
   "deferred": {}
 }
