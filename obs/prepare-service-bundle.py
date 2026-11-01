@@ -166,6 +166,19 @@ def prepare(name):
             spec=spec.replace('\n%description\n','\nBuildRequires:  '+dependency+'\n\n%description\n',1)
     spec=re.sub(r'(?m)^Source0:.*$', 'Source0:        '+archive+'\nSource1:        service-sources.json\nSource2:        extract-service-sources.py\n'+'\n'.join(declarations),spec)
     spec=spec.replace('%setup -q\n','%setup -q -n '+name+'-'+version+'\npython3 %{SOURCE2} %{_sourcedir} %{SOURCE1}\n'+prep_extra,1)
+    if name=='kshim-freedom':
+        shutil.copyfile(ROOT/'obs'/name/'rpm-boot-update.py',d/'rpm-boot-update.py')
+        spec=spec.replace('Source2:        extract-service-sources.py\n',
+                          'Source2:        extract-service-sources.py\nSource3:        rpm-boot-update.py\n',1)
+        if not re.search(r'(?m)^Requires:\s+coreutils$',spec):
+            spec=spec.replace('\n%description\n','\nRequires:       coreutils\n\n%description\n',1)
+        spec=spec.replace('bash recipe-stage.sh install %{buildroot}\n',
+                          'bash recipe-stage.sh install %{buildroot}\n'
+                          'install -Dm644 %{SOURCE3} %{buildroot}%{_prefix}/lib/kshim-freedom/rpm-boot-update.py\n',1)
+        spec=spec.replace('\n%files -f files.list\n',
+                          '\n%transfiletriggerin -P 1000 -- /boot /usr/lib/modules /usr/lib/kshim-freedom\n'
+                          '/usr/bin/python3 %{_prefix}/lib/kshim-freedom/rpm-boot-update.py\n'
+                          '\n%files -f files.list\n',1)
     if name=='directx-shader-compiler-render':
         # DXC's old LLVM needs the lifetime-DSE workaround used by LLVM 18.
         # Keep the upstream source service and publish this patch separately.

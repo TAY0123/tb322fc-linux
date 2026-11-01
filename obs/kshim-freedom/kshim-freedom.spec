@@ -8,6 +8,7 @@ URL:            https://github.com/h0cheung/tb322fc-linux
 Source0:        kshim-freedom-20261024-local.tar.xz
 Source1:        service-sources.json
 Source2:        extract-service-sources.py
+Source3:        rpm-boot-update.py
 Source10:        kshim-build-boot.py
 Source11:        freedom-runtime-244b74516d99d06cb0518609ce4b842ab278be8a.tar
 Source12:        freedom-tools-244b74516d99d06cb0518609ce4b842ab278be8a.tar
@@ -36,6 +37,7 @@ BuildRequires:  glibc-devel-static
 BuildRequires:  libopenssl-devel
 BuildRequires:  zlib-devel
 Requires:       cpio
+Requires:       coreutils
 Requires:       dtc
 Requires:       gzip
 Requires:       kbd
@@ -66,10 +68,14 @@ bash recipe-stage.sh build
 
 %install
 bash recipe-stage.sh install %{buildroot}
+install -Dm644 %{SOURCE3} %{buildroot}%{_prefix}/lib/kshim-freedom/rpm-boot-update.py
 python3 file-list.py %{buildroot} > files.list
 
 %check
 bash recipe-stage.sh check
+
+%transfiletriggerin -P 1000 -- /boot /usr/lib/modules /usr/lib/kshim-freedom
+/usr/bin/python3 %{_prefix}/lib/kshim-freedom/rpm-boot-update.py
 
 %files -f files.list
 %defattr(-,root,root)

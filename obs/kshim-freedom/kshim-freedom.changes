@@ -1,4 +1,13 @@
 -------------------------------------------------------------------
+Sun Nov 01 10:06:21 UTC 2026 - h0cheung <hcheunh@gmail.com>
+
+- Refresh the configured boot slot after RPM transactions changing the
+  kernel, KMPs, kShim or packaged boot arguments. Select the newest owned
+  kernel, after the official module scriptlets finish.
+- Preserve per-device opt-in and skip build roots/unconfigured systems;
+  reuse signing, required-module, backup and readback checks.
+
+-------------------------------------------------------------------
 Sun Nov 01 07:12:46 UTC 2026 - h0cheung <hcheunh@gmail.com>
 
 - Read packaged cmdline.d defaults without shell execution, preserving

@@ -103,6 +103,13 @@ and `vconsole.font` arguments remain authoritative. The same arguments are
 listed in the public boot profile. Console rotation is independent of
 Gamescope and Plymouth; the landscape direction still needs a device check.
 
+On an installed Elden with `deploy_boot_a: true`, kShim's RPM transaction file
+trigger refreshes boot after kernel, KMP or packaged boot-default updates.
+It runs after package scriptlets, selects the newest RPM-owned Freedom kernel,
+and retains the updater's required-module, signing, backup and readback checks.
+Build roots and unconfigured installations do not deploy anything. Removing
+boot-default files still requires an explicit `freedom-kernel-update` run.
+
 `plymouth` links the official openSUSE recipe and fetches upstream 26.134.222
 through `_service`. The library, plugin, theme and systemd package layout stays
 close to openSUSE's. The port retains the applicable integration patches and
