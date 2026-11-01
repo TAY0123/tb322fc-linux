@@ -1,7 +1,7 @@
 # Maintainer: h0cheung <hcheunh@gmail.com>
 pkgname=gamescope-session
 pkgver=20260920
-pkgrel=3
+pkgrel=4
 pkgdesc="Base gamescope session machinery (gamescope-session-plus) used by the Steam gaming session"
 arch=('any')
 url="https://github.com/OpenGamingCollective/gamescope-session"
@@ -15,7 +15,7 @@ source=(
     '0002-freedom-composition-rotation.patch'
     'y700-rotation'
 )
-sha256sums=('SKIP' '477dc5d672660c77e8ee3fb461b940c814e1895f9ebd0e1741e1b8b79d89ae57' '4df70f3c81a68a66483f2a62be6c3d1693b2bb381a9011a0ec8865e0a2688097' '0f4b6210d8fdce7a4f60ad09760182f33b60a2d587f2377d1bdb042aed3a2855')
+sha256sums=('SKIP' '477dc5d672660c77e8ee3fb461b940c814e1895f9ebd0e1741e1b8b79d89ae57' '4ec470694ba4efb290657844a0d55310398432a427afef348240cea6632e52cb' '4b71ec8e8d169b12d0bc2371f2044a3f0fb90d9132f02ea9f307c42e592c8702')
 
 prepare() {
     cd "$pkgname"

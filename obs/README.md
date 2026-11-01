@@ -85,10 +85,12 @@ ALS uses the standard KMP macros and waits for matching kernel development RPMs.
 
 The Freedom kernel RPM also owns the versioned
 `/usr/lib/modules/<release>/freedom-dpu-rotation` capability marker, matching
-the Arch recipe. Gamescope keeps GPU rotation as its default; after booting
-the matching kernel, set `Y700_ROTATION=dpu` in
-`~/.config/gamescope-session-plus/sessions.d/steam` and restart the game session
-to opt in. The marker alone does not enable DPU rotation. See the
+the Arch recipe. The updated Gamescope session package defaults to DPU rotation
+when the running kernel has this marker, and falls back to GPU rotation on
+older Freedom kernels. No per-user configuration is needed. To force GPU
+rotation, set `Y700_ROTATION=gpu` in
+`~/.config/gamescope-session-plus/sessions.d/steam` and restart the game session.
+`Y700_ROTATION=auto` (or removing the override) restores the default. See the
 [device validation record](../docs/freedom-sync-20261029.md) for the expected
 DRM plane state and GPU fallback.
 

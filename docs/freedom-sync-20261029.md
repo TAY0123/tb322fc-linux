@@ -66,22 +66,24 @@ SM8850 使用 OP_MODE bit15，SM8750 继续使用 FORMAT bit11；补丁按 DPU m
 
 ## 启用与回退
 
-**仓库默认保持 GPU 旋转。** 2026-10-30 已按用户要求持久刷入带 0016/0017 的 `7.2.6-21-freedom`，设备显式使用 DPU。21 版通过原生 3K / 165 Hz 双图层扫描、会话重进、关屏恢复和一次 s2idle；用户确认恢复后的四角触摸及实体画面正常。首次未含 0016 的 20 版存在画面停住问题，不适合作为 DPU 基线。
+2026-10-30 验证时，仓库默认保持 GPU 旋转，设备已按用户要求持久刷入带 0016/0017 的 `7.2.6-21-freedom` 并显式使用 DPU。21 版通过原生 3K / 165 Hz 双图层扫描、会话重进、关屏恢复和一次 s2idle；用户确认恢复后的四角触摸及实体画面正常。首次未含 0016 的 20 版存在画面停住问题，不适合作为 DPU 基线。
 新内核包在匹配的 `/usr/lib/modules/<release>/freedom-dpu-rotation` 安装能力文件；
-显式请求 DPU 时，旧内核没有该文件就继续用 GPU，防止仅更新会话包后误启用。
+2026-11-01 补齐 openSUSE RPM 的这一文件，并将会话包默认策略改为自动选择：
+运行内核有标记就使用 DPU，旧 Freedom 内核没有标记就继续用 GPU，防止仅更新会话包后误启用。
 
-安装同一次构建的 Image、DTB、模块/headers 及更新后的 Gamescope、会话包后，在
-`~/.config/gamescope-session-plus/sessions.d/steam` 添加：
+安装匹配的 Image、DTB、模块/headers 及更新后的 Gamescope、会话包，启动新内核并进入游戏会话后，
+不需要额外添加用户配置。需要回退 GPU 时，在 `~/.config/gamescope-session-plus/sessions.d/steam` 添加：
 
 ```sh
-Y700_ROTATION=dpu
+Y700_ROTATION=gpu
 ```
 
 会话在系统和用户配置全部读取后再应用策略，移除强制 GPU 旋转，并默认使用
 `--force-orientation right`（270°，与四代现有自动方向一致）；保留显式 `ORIENTATION` 覆盖。
 五代文档中的 `left` 不适合直接作为四代默认值。
 
-回退时改为 `Y700_ROTATION=gpu` 或删除这一行，然后重启游戏会话。
+删除这一行或改为 `Y700_ROTATION=auto`，然后重启游戏会话，可恢复自动选择。
+仍可用 `Y700_ROTATION=dpu` 显式请求 DPU；内核缺少标记时会提示并回退 GPU。
 保留旧 boot 镜像和相应模块作为启动回退，不能只回退 Image。
 
 允许 DPU 扫描并不保证所有画面都直接扫描。非 UBWC、格式/色彩/缩放不满足条件、图层超过管线资源时，Gamescope 仍可进行 GPU 合成；Steam 菜单尤其可能走 GPU。

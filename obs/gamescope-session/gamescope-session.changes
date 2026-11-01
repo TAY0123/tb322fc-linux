@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
-Sat Oct 31 09:00:00 UTC 2026 - h-cheung
+Sun Nov 01 06:41:52 UTC 2026 - h0cheung <hcheunh@gmail.com>
+
+- Default to DPU rotation when the running kernel provides its capability
+  marker; retain GPU fallback and the Y700_ROTATION=gpu override.
+
+-------------------------------------------------------------------
+Sat Oct 31 09:00:00 UTC 2026 - h0cheung <hcheunh@gmail.com>
 
 - Initial Tumbleweed aarch64 build evaluation for TB322FC.

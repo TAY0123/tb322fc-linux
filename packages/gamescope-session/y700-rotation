@@ -1,11 +1,13 @@
 # Sourced only for the Y700 Gen4 by device-quirks.
 y700_rotation_policy() {
     local kernel_dir=${1:-/usr/lib/modules/$(uname -r)}
-    # Keep the validated path until DPU scanout has been tested on this panel.
-    if [[ $(uname -r) == *-freedom* ]]; then
+    local rotation=${Y700_ROTATION:-auto}
+    # Older Freedom kernels require GPU rotation; preserve the explicit override.
+    if [[ $(uname -r) == *-freedom* || $rotation == gpu ]]; then
         FORCE_COMPOSITION_ROTATION=1
     fi
-    if [[ ${Y700_ROTATION:-gpu} == dpu ]]; then
+    # Prefer the validated DPU path only for the matching, marked kernel.
+    if [[ $rotation == dpu || ( $rotation == auto && -f $kernel_dir/freedom-dpu-rotation ) ]]; then
         if [[ -f $kernel_dir/freedom-dpu-rotation ]]; then
             FORCE_COMPOSITION_ROTATION=0
             # Matches the existing portrait-panel auto orientation (270 degrees).

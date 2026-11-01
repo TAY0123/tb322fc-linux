@@ -30,8 +30,13 @@ printf '%s,%s' "${FORCE_COMPOSITION_ROTATION:-unset}" "${ORIENTATION:-unset}"
                                     env=env, text=True, capture_output=True, check=True)
             return result.stdout, result.stderr
 
-    def test_default_retains_validated_gpu_path(self):
-        self.assertEqual(self.policy(supported=True)[0], '1,unset')
+    def test_default_uses_dpu_with_matching_kernel(self):
+        self.assertEqual(self.policy(supported=True), ('0,right', ''))
+        self.assertEqual(self.policy('auto', supported=True), ('0,right', ''))
+
+    def test_default_falls_back_without_matching_kernel(self):
+        self.assertEqual(self.policy(), ('1,unset', ''))
+        self.assertEqual(self.policy('auto'), ('1,unset', ''))
 
     def test_dpu_requires_matching_kernel(self):
         output, error = self.policy('dpu')
@@ -42,6 +47,8 @@ printf '%s,%s' "${FORCE_COMPOSITION_ROTATION:-unset}" "${ORIENTATION:-unset}"
     def test_gpu_override_and_explicit_orientation(self):
         self.assertEqual(self.policy('gpu', supported=True)[0], '1,unset')
         self.assertEqual(self.policy('dpu', True, 'left')[0], '0,left')
+        self.assertEqual(self.policy(supported=True, orientation='left')[0], '0,left')
+        self.assertEqual(self.policy('gpu', True, kernel='7.3.1-custom')[0], '1,unset')
 
     def test_other_kernel_default_is_untouched(self):
         self.assertEqual(self.policy(kernel='7.3.1-custom')[0], 'unset,unset')

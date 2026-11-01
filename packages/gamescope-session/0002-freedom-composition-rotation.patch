@@ -4,7 +4,7 @@
    # Enables the adaptive brightness toggle (Steam checks this env var in
    # addition to finding an ambient light sensor; see als-bridge).
    export STEAM_ENABLE_DYNAMIC_BACKLIGHT=1
-+  # Select the tested GPU path or explicitly request updated DPU scanout.
++  # Prefer DPU scanout when the running kernel advertises support.
 +  source /usr/lib/gamescope-session/y700-rotation
  fi
  
