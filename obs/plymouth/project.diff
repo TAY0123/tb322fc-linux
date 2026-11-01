@@ -1,0 +1,182 @@
+--- plymouth.changes.orig
++++ plymouth.changes
+@@ -1,3 +1,19 @@
++-------------------------------------------------------------------
++Sun Nov 01 07:09:12 UTC 2026 - h0cheung <hcheunh@gmail.com>
++
++- Update to 26.134.222 for native evdev/XKB input and configurable Escape
++  alternatives on devices without a keyboard.
++- Switch to Meson while retaining the official RPM library/theme split and
++  systemd integration. Add libevdev, xkbcommon and XKB data dependencies.
++- Retain openSUSE dracut paths, colors, service lifetime, quiet initrd and
++  keyboard handler patches. Drop the superseded font/hotplug/manpage patches,
++  the old Autotools logo change, legacy DPI heuristic and SLE VMware patch.
++- Use upstream boot logging and opt-in Plymouth debug tracing.
++- Export xkbcommon include flags for public input headers and update the
++  installed file list for Meson and the new release archive.
++- Rebase openSUSE WatermarkPath support; add an opt-in internal-panel boot
++  orientation override without changing desktop DRM orientation properties.
++
+ -------------------------------------------------------------------
+ Tue Feb 10 15:29:57 UTC 2026 - Cliff Zhao <qzhao@suse.com>
+ 
+--- plymouth.spec.orig
++++ plymouth.spec
+@@ -23,7 +23,8 @@
+ %global soversion 5
+ 
+ Name:           plymouth
+-Version:        22.02.122+94.4bd41a3
++ExclusiveArch:  aarch64
++Version:        26.134.222
+ Release:        0
+ Summary:        Graphical Boot Animation and Logger
+ License:        GPL-2.0-or-later
+@@ -35,32 +36,19 @@
+ Patch0:         plymouth-dracut-path.patch
+ # PATCH-FIX-OPENSUSE plymouth-some-greenish-openSUSE-colors.patch bnc#886148 fcrozat@suse.com -- To use suse colors in tribar.
+ Patch1:         plymouth-some-greenish-openSUSE-colors.patch
+-# PATCH-FIX-UPSTREAM plymouth-manpages.patch bnc#871419 idoenmez@suse.de -- Fix man page installation
+-Patch2:         plymouth-manpages.patch
+-# PATCH-FIX-OPENSUSE plymouth-disable-fedora-logo.patch qzhao@suse.com -- Disable the fedora logo reference which is not in openSUSE.
+-Patch3:         plymouth-disable-fedora-logo.patch
+ # PATCH-FIX-OPENSUSE plymouth-keep-KillMode-none.patch bsc#1177082 bsc#1184087 boo#1182145 qzhao@suse.com -- Keep the plymouth-start.service KillMode=none.
+ Patch4:         plymouth-keep-KillMode-none.patch
+-# PATCH-FIX-OPENSUSE plymouth-install-label-library-and-font-file-to-initrd.patch boo#1183425 boo#1184309 qzhao@suse.com -- Pack label plugin and font into initram to ensure notice info could successfully show when partition encrypted.
+-Patch5:         plymouth-install-label-library-and-font-file-to-initrd.patch
+ # PATCH-FIX-OPENSUSE plymouth-quiet-dracut-build-info.patch bsc#1189613 qzhao@suse.com -- Hide unuseful output when re-generate initrd.
+ Patch6:         plymouth-quiet-dracut-build-info.patch
+-# PATCH-FIX-OPENSUSE plymouth-watermark-config.patch bsc#1189613 qzhao@suse.com -- Add two-step water mark config support.
+-Patch7:         plymouth-watermark-config.patch
+-# PATCH-FIX-OPENSUSE plymouth-log-on-default.patch bsc#1193736 qzhao@suse.com -- Enable plymouth log by default, help to resolve random appear problems.
+-Patch8:         plymouth-log-on-default.patch
+-# PATCH-FIX-OPENSUSE plymouth-screen-twice-scale-on-160DPI-higher.patch boo#1183425 boo#1184309 qzhao@suse.com -- When DPI > 160, screen will scale output twice.
+-Patch9:         plymouth-screen-twice-scale-on-160DPI-higher.patch
+ # PATCH-FIX-OPENSUSE plymouth-crash-avoid-on-keyboard-remove-input-handler.patch bsc#1193736 qzhao@suse.com -- Confirm keyboard handler list not NULL before release memory to avoid crash.
+ Patch10:        plymouth-crash-avoid-on-keyboard-remove-input-handler.patch
+-# PATCH-FIX-SLE plymouth-support-multi-monitor-hotplugin.patch bsc#1231214 qzhao@suse.com -- support the 2nd monitor hotplugin to the system to display the same content with the first monitor.
+-Patch13:        plymouth-support-multi-monitor-hotplugin.patch
+-# PATCH-FIX-SLE plymouth-select_fb_for_vmware.patch bsc#1234643 qzhao@suse.com -- use frame-buffer in vmware VM platform.
+-Patch100:       plymouth-select_fb_for_vmware.patch
+-BuildRequires:  automake
++Patch7:         plymouth-watermark-config.patch
++Patch101:       plymouth-internal-panel-rotation.patch
++Patch102:       plymouth-public-xkbcommon-dependency.patch
++BuildRequires:  meson
++BuildRequires:  gettext-tools
+ BuildRequires:  docbook-xsl-stylesheets
+ BuildRequires:  gcc
+-BuildRequires:  libtool
+ BuildRequires:  libxslt
+ BuildRequires:  pkgconfig
+ %if 0%{suse_version} >= 1550
+@@ -69,11 +57,14 @@
+ %else
+ BuildRequires:  suse-module-tools
+ %endif
+-BuildRequires:  intltool
+ BuildRequires:  xz
+ BuildRequires:  pkgconfig(cairo)
+ BuildRequires:  pkgconfig(freetype2)
+ BuildRequires:  pkgconfig(libdrm)
++BuildRequires:  pkgconfig(libevdev)
++BuildRequires:  pkgconfig(xkbcommon)
++BuildRequires:  pkgconfig(xkeyboard-config)
++BuildRequires:  pkgconfig(fontconfig)
+ BuildRequires:  pkgconfig(libsystemd) >= 186
+ BuildRequires:  pkgconfig(libudev)
+ BuildRequires:  pkgconfig(pango) >= 1.21.0
+@@ -86,6 +77,7 @@
+ Recommends:     %{name}-lang
+ Requires:       %{name}-branding
+ Requires:       systemd >= 186
++Requires:       xkeyboard-config
+ Requires(post): coreutils
+ Requires(post): plymouth-scripts = %{version}
+ Requires(postun): coreutils
+@@ -363,47 +355,36 @@
+ Plymouth.
+ 
+ %prep
++printf '%s  %s\n' '6ee1068216c5047923fabf0f6aa583e9d77cab383077358df3fc22f2ee398bb0' '%{SOURCE0}' | sha256sum -c
+ %setup -q
+ %patch -P 0 -p1
+ %patch -P 1 -p1
+-%patch -P 2 -p1
+-%patch -P 3 -p1
+ %patch -P 4 -p1
+-%patch -P 5 -p1
+ %patch -P 6 -p1
++%patch -P 10 -p1
+ %patch -P 7 -p1
+-%patch -P 8 -p1
+-%patch -P 9 -p1
+-%patch -P 10 -p1
+-%patch -P 13 -p1
+-%if !0%{?is_opensuse}
+-%patch -P 100 -p1
+-%endif
+-autoreconf -ivf
++%patch -P 101 -p1
++%patch -P 102 -p1
+ 
+ %build
+-%configure \
+-           --enable-systemd-integration                          \
+-           --enable-tracing                                      \
+-           --disable-silent-rules                                \
+-           --disable-static                                      \
+-           --disable-upstart-monitoring                          \
+-           --disable-tests                                       \
++%meson \
++    -Dsystemd-integration=true \
++    -Dtracing=true \
+ %if %{without x11_renderer}
+-           --disable-gtk                                         \
+-%endif
+-           --with-release-file=%{_sysconfdir}/os-release         \
+-           --with-shutdown-tty=/dev/tty7                         \
+-           --with-background-start-color-stop=0x1A3D1F           \
+-           --with-background-end-color-stop=0x4EA65C             \
+-           --with-background-color=0x3391cd                      \
+-           --without-rhgb-compat-link                            \
+-           --without-system-root-install
+-
+-make %{?_smp_mflags}
++    -Dgtk=disabled \
++%endif
++    -Drelease-file=%{_sysconfdir}/os-release \
++    -Dshutdown-tty=/dev/tty7 \
++    -Dbackground-start-color-stop=0x1A3D1F \
++    -Dbackground-end-color-stop=0x4EA65C \
++    -Dbackground-color=0x3391cd
++%meson_build
+ 
+ %install
+-%make_install
++%meson_install
++
++# Runtime state is created by the official tmpfiles configuration.
++rmdir %{buildroot}/run/plymouth
+ 
+ # *.la are files generated during compilation, useless for final user.
+ find %{buildroot} -type f -name "*.la" -delete
+@@ -547,6 +528,9 @@
+     fi
+ fi
+ 
++%check
++%meson_test
++
+ %files
+ %dir %{_sysconfdir}/plymouth
+ %ghost %{_sysconfdir}/plymouth/plymouthd.conf
+@@ -576,7 +560,7 @@
+ %{_unitdir}/*
+ %{_libexecdir}/plymouth/plymouthd-fd-escrow
+ %{_tmpfilesdir}/plymouth.conf
+-%doc AUTHORS NEWS README.md ply_header.svg
++%doc AUTHORS README.md ply_header.svg
+ %license COPYING
+ 
+ %files lang -f %{name}.lang

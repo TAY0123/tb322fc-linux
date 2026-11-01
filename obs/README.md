@@ -103,6 +103,28 @@ and `vconsole.font` arguments remain authoritative. The same arguments are
 listed in the public boot profile. Console rotation is independent of
 Gamescope and Plymouth; the landscape direction still needs a device check.
 
+`plymouth` links the official openSUSE recipe and fetches upstream 26.134.222
+through `_service`. The library, plugin, theme and systemd package layout stays
+close to openSUSE's. The port retains the applicable integration patches and
+rebases `WatermarkPath`; font inclusion, hotplug and manual-page fixes already
+covered upstream are removed. New native evdev/XKB input handles the tablet's
+standalone volume buttons. `plymouth.panel-rotation=270` overrides Plymouth's
+own internal-display drawing only, leaving desktop DRM orientation unchanged.
+
+`plymouth-defaults-tb322fc` depends on the unmodified official
+`plymouth-branding-openSUSE` (BGRT) and its Cantarell font. It supplies only
+2x scaling, native DRM selection and `XkbExtraEscButton` for Volume Up;
+artwork, colours, layout, theme timing and text remain the official defaults.
+A short press switches between animation and detailed console output during
+boot or shutdown; the power button is not
+remapped. The package installs `splash` and panel-rotation defaults under
+`/usr/lib/kshim-freedom/cmdline.d/`, so rebuilding boot incorporates them into
+existing installations and CI images. Explicit `splash=verbose`,
+`plymouth.enable=0` or panel-rotation arguments remain available for diagnosis.
+The standard early-systemd and shutdown services are used; the existing short
+BusyBox root handoff retains its direct text failure reporting. Physical
+orientation, button input and SDDM handoff still require device validation.
+
 The active project target profile is maintained in `project.conf`: native
 C/C++ uses `-mcpu=oryon-1+rng+fp16`, kernel/KMP builds pass the same CPU setting
 through `KCFLAGS`, and Rust uses `target-cpu=oryon-1` with `+rand,+fp16`.

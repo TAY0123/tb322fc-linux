@@ -23,7 +23,7 @@ TARGET_PACKAGES = {
     'gamescope-armada', 'gtk2', 'hexagonrpc', 'iio-sensor-proxy-y700',
     'inputplumber-g9-2026', 'kernel-source', 'kettle-framegen-armada', 'kshim-freedom',
     'libcamera-y700', 'libkscreen6', 'libplacebo', 'libssc', 'llvm-mingw-arm64ec', 'mangohud-armada', 'mesa-y700-gen4',
-    'msime', 'optiscaler-arm64ec-armada', 'plasma6-setup',
+    'msime', 'optiscaler-arm64ec-armada', 'plasma6-setup', 'plymouth',
     'steamos-manager', 'tb322fc-sensors', 'umtp-responder-freedom',
 }
 

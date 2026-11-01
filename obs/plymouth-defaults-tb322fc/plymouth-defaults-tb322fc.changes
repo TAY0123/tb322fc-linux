@@ -1,0 +1,6 @@
+-------------------------------------------------------------------
+Sun Nov 01 07:23:47 UTC 2026 - h0cheung <hcheunh@gmail.com>
+
+- Keep official plymouth-branding-openSUSE and its BGRT theme unchanged.
+- Add 2x display scaling and Volume Up to switch animation and details.
+- Supply graphical boot and internal-panel rotation defaults to kShim.

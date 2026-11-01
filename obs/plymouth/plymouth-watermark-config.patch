@@ -1,0 +1,33 @@
+From: h0cheung <hcheunh@gmail.com>
+Subject: Retain openSUSE theme watermark paths on 26.134.222
+
+--- a/src/plugins/splash/two-step/plugin.c
++++ b/src/plugins/splash/two-step/plugin.c
+@@ -1205,7 +1205,11 @@
+ 
+         free (image_path);
+ 
+-        asprintf (&image_path, "%s/watermark.png", image_dir);
++        image_path = ply_key_file_get_value (key_file, "two-step", "WatermarkPath");
++        if (image_path == NULL || access (image_path, R_OK) != 0) {
++                free (image_path);
++                asprintf (&image_path, "%s/watermark.png", image_dir);
++        }
+         plugin->watermark_image = ply_image_new (image_path);
+         free (image_path);
+ 
+--- a/scripts/plymouth-populate-initrd.in
++++ b/scripts/plymouth-populate-initrd.in
+@@ -549,6 +549,12 @@
+ PLYMOUTH_MODULE_NAME=$(grep "ModuleName *= *" ${PLYMOUTH_SYSROOT}${PLYMOUTH_THEME_DIR}/${PLYMOUTH_THEME_NAME}.plymouth | sed 's/ModuleName *= *//')
+ PLYMOUTH_IMAGE_DIR=$(grep "ImageDir *= *" ${PLYMOUTH_SYSROOT}${PLYMOUTH_THEME_DIR}/${PLYMOUTH_THEME_NAME}.plymouth | sed 's/ImageDir *= *//')
+ 
++# Preserve openSUSE's external watermark support.
++PLYMOUTH_WATERMARK_PATH=$(grep "^WatermarkPath *= *" "${PLYMOUTH_SYSROOT}${PLYMOUTH_THEME_DIR}/${PLYMOUTH_THEME_NAME}.plymouth" | sed 's/WatermarkPath *= *//')
++if [ -n "$PLYMOUTH_WATERMARK_PATH" ] && [ -f "${PLYMOUTH_SYSROOT}${PLYMOUTH_WATERMARK_PATH}" ]; then
++    inst "$PLYMOUTH_WATERMARK_PATH" "$INITRDDIR"
++fi
++
+ 
+ PLYMOUTH_FONT_PATH=""
+ PLYMOUTH_FONT=$(grep "\bFont *= *" ${PLYMOUTH_SYSROOT}${PLYMOUTH_THEME_DIR}/${PLYMOUTH_THEME_NAME}.plymouth | sed 's/Font *= *//' | head -1)

@@ -12,6 +12,11 @@
 并安装 `kbd`。用户在 `cmdline` 中显式指定的旋转或字体优先于这些默认值；
 `vconsole.font` 会按 systemd 的规则覆盖 `/etc/vconsole.conf` 的 `FONT`。
 
+软件包还可在 `/usr/lib/kshim-freedom/cmdline.d/*.conf` 提供默认启动参数。
+这些文件按名称排序读取，仅解析参数及注释，不执行 shell；设备 `cmdline` 中的同名参数优先。
+Plymouth 机型配置包使用这一机制启用动画和自身的横屏绘制。新增或移除配置后需重新生成 boot；
+可在设备配置中使用 `splash=verbose` 默认显示文字，或 `plymouth.enable=0` 禁用 Plymouth。
+
 `freedom-kernel-update --kernel <release> --stage-only` 生成并校验候选，`--deploy` 在完整备份后写 A 并回读；配置 `deploy_boot_a` 可让更新 hook 自动部署。程序不重启系统，不写 B/recovery。候选、打包检查、签名和部署结果位于 `/var/lib/kshim-freedom/candidates/`，最新结果见 `latest.json`。
 
 自动部署只选择仍归属于配置内核包的模块目录，避免 ALS/DKMS 更新 hook 误选保留的回退目录；显式 `--kernel` 仍可选择指定版本。

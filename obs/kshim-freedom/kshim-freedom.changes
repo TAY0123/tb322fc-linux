@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Sun Nov 01 07:12:46 UTC 2026 - h0cheung <hcheunh@gmail.com>
+
+- Read packaged cmdline.d defaults without shell execution, preserving
+  explicit device arguments and the validated root selector.
+- Advertise kshim-boot-argument-defaults for the Plymouth branding package.
+
+-------------------------------------------------------------------
 Sun Nov 01 06:58:47 UTC 2026 - h0cheung <hcheunh@gmail.com>
 
 - Default generated boot arguments to landscape and 16x32 console fonts,

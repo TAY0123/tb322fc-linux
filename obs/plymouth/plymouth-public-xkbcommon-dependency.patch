@@ -1,0 +1,40 @@
+From: h0cheung <hcheunh@gmail.com>
+Subject: [PATCH] meson: propagate the public xkbcommon header dependency
+
+ply-input-device.h exposes xkbcommon types. Consumers of splash-core need
+its include flags, including on distributions using a versioned include
+prefix. Export this through both Meson and pkg-config.
+
+--- a/src/libply-splash-core/meson.build
++++ b/src/libply-splash-core/meson.build
+@@ -17,12 +17,12 @@
+ 
+ libply_splash_core_public_deps = [
+   libply_dep,
++  xkbcommon_dep,
+ ]
+ 
+ libply_splash_core_private_deps = [
+   lm_dep,
+   libevdev_dep,
+-  xkbcommon_dep,
+   xkeyboard_config_dep,
+ ]
+ 
+@@ -48,7 +48,7 @@
+ 
+ libply_splash_core_dep = declare_dependency(
+   link_with: libply_splash_core,
+-  dependencies: libply_dep,
++  dependencies: libply_splash_core_public_deps,
+   include_directories: include_directories('.'),
+ )
+ 
+@@ -78,6 +78,7 @@
+ pkgconfig.generate(libply_splash_core,
+   filebase: 'ply-splash-core',
+   name: 'Plymouth',
++  requires: ['xkbcommon'],
+   description: 'Utility Library for Boot Splash Plugins',
+   libraries: [
+     libply,

@@ -1,0 +1,6 @@
+<services>
+  <service name="download_url" mode="serveronly">
+    <param name="url">https://www.freedesktop.org/software/plymouth/releases/plymouth-26.134.222.tar.xz</param>
+    <param name="filename">plymouth-26.134.222.tar.xz</param>
+  </service>
+</services>

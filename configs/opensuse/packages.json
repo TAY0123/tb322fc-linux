@@ -118,7 +118,9 @@
     "decky-render-tools",
     "kettle-framegen-armada",
     "plasma6-setup",
-    "plasma6-setup-lang"
+    "plasma6-setup-lang",
+    "plymouth",
+    "plymouth-defaults-tb322fc"
   ],
   "obs_builds": [
     "kernel-source",
@@ -166,7 +168,9 @@
     "python-aiohttp-jinja2",
     "python-aiohttp_cors",
     "gtk2",
-    "plasma6-setup"
+    "plasma6-setup",
+    "plymouth",
+    "plymouth-defaults-tb322fc"
   ],
   "deferred": {}
 }

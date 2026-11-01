@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+import shlex
 import subprocess
 import shutil
 import struct
@@ -12,7 +13,13 @@ import tempfile
 import uuid
 
 
-def boot_arguments(cmdline, root_selector):
+def package_boot_defaults(directory=Path('/usr/lib/kshim-freedom/cmdline.d')):
+    """Read packaged boot defaults as data, without executing shell fragments."""
+    return [token for path in sorted(directory.glob('*.conf'))
+            for token in shlex.split(path.read_text(), comments=True)]
+
+
+def boot_arguments(cmdline, root_selector, defaults=()):
     """Apply Gen4 console defaults while preserving explicit boot overrides."""
     if any(c in cmdline for c in "\x00\r\n"):
         raise ValueError("cmdline must be one line")
@@ -27,6 +34,14 @@ def boot_arguments(cmdline, root_selector):
     # font after the kernel's 16x32 console has already appeared.
     if not any(token.startswith('vconsole.font=') for token in tokens):
         tokens.append('vconsole.font=latarcyrheb-sun32')
+    keys = {token.split('=', 1)[0] for token in tokens}
+    for token in defaults:
+        key = token.split('=', 1)[0]
+        if key in ('root', '--') or any(c.isspace() or c == '\0' for c in token):
+            raise ValueError('invalid packaged boot default: ' + repr(token))
+        if key not in keys:
+            tokens.append(token)
+            keys.add(key)
     tokens.append('root=' + root_selector)
     return ' '.join(tokens)
 
@@ -58,7 +73,7 @@ def main():
     root_uuid = str(uuid.UUID(args.root_partuuid)) if args.root_partuuid else None
     root_selector = "PARTUUID=" + root_uuid if root_uuid else "PARTLABEL=rootfs"
     try:
-        cmdline = boot_arguments(args.cmdline, root_selector)
+        cmdline = boot_arguments(args.cmdline, root_selector, package_boot_defaults())
     except ValueError as error:
         parser.error(str(error))
     # Keep upstream source intact; apply the reviewed Arch-layout delta.

@@ -1,0 +1,13 @@
+<link project="openSUSE:Factory" package="plymouth" baserev="5c0ea9354dd197048d9ec87446d018ce" rev="5c0ea9354dd197048d9ec87446d018ce">
+  <patches>
+    <apply name="project.diff" />
+    <delete name="plymouth-22.02.122+94.4bd41a3.tar.xz" />
+    <delete name="plymouth-disable-fedora-logo.patch" />
+    <delete name="plymouth-install-label-library-and-font-file-to-initrd.patch" />
+    <delete name="plymouth-log-on-default.patch" />
+    <delete name="plymouth-manpages.patch" />
+    <delete name="plymouth-screen-twice-scale-on-160DPI-higher.patch" />
+    <delete name="plymouth-select_fb_for_vmware.patch" />
+    <delete name="plymouth-support-multi-monitor-hotplugin.patch" />
+  </patches>
+</link>
