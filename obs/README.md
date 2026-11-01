@@ -95,13 +95,14 @@ rotation, set `Y700_ROTATION=gpu` in
 DRM plane state and GPU fallback.
 
 The kernel also enables framebuffer-console rotation and the built-in
-`TER16x32` font. kShim's boot generator defaults to `fbcon=rotate:3` and a
+`TER16x32` font. kShim's boot generator defaults to `fbcon=rotate:1` and a
 16x32 font, then keeps that size after root handoff with
 `vconsole.font=latarcyrheb-sun32` from `kbd`. These defaults also apply when
 rebuilding boot for an existing installation; explicit `fbcon` rotation/font
 and `vconsole.font` arguments remain authoritative. The same arguments are
 listed in the public boot profile. Console rotation is independent of
-Gamescope and Plymouth; the landscape direction still needs a device check.
+Gamescope and Plymouth. Use clockwise console/Plymouth rotation for the
+landscape position; Gamescope's scanout transform uses a different convention.
 
 On an installed Elden with `deploy_boot_a: true`, kShim's RPM transaction file
 trigger refreshes boot after kernel, KMP or packaged boot-default updates.
@@ -115,22 +116,34 @@ through `_service`. The library, plugin, theme and systemd package layout stays
 close to openSUSE's. The port retains the applicable integration patches and
 rebases `WatermarkPath`; font inclusion, hotplug and manual-page fixes already
 covered upstream are removed. New native evdev/XKB input handles the tablet's
-standalone volume buttons. `plymouth.panel-rotation=270` overrides Plymouth's
+standalone volume buttons. `plymouth.panel-rotation=90` overrides Plymouth's
 own internal-display drawing only, leaving desktop DRM orientation unchanged.
 
 `plymouth-defaults-tb322fc` depends on the unmodified official
-`plymouth-branding-openSUSE` (BGRT) and its Cantarell font. It supplies only
-2x scaling, native DRM selection and `XkbExtraEscButton` for Volume Up;
-artwork, colours, layout, theme timing and text remain the official defaults.
+`plymouth-branding-openSUSE` and Cantarell font, but selects the packaged
+Spinner theme for this Device Tree tablet. Both Spinner and BGRT retain the
+openSUSE `WatermarkPath` pointing to the official Tumbleweed logo; Spinner
+does not depend on a firmware/OEM logo. The package supplies 2x scaling, native
+DRM selection and `XkbExtraEscButton` for Volume Up. Theme colours, layout,
+animations and text remain unchanged.
 A short press switches between animation and detailed console output during
 boot or shutdown; the power button is not
 remapped. The package installs `splash` and panel-rotation defaults under
 `/usr/lib/kshim-freedom/cmdline.d/`, so rebuilding boot incorporates them into
 existing installations and CI images. Explicit `splash=verbose`,
 `plymouth.enable=0` or panel-rotation arguments remain available for diagnosis.
-The standard early-systemd and shutdown services are used; the existing short
-BusyBox root handoff retains its direct text failure reporting. Physical
-orientation, button input and SDDM handoff still require device validation.
+No `quiet` argument or reduced logging level is added. A `plymouth-quit.service`
+drop-in retains the last graphic frame until the display manager takes over, without adding a
+boot delay. It does not keep the animation running after Plymouth exits.
+A packaged kShim initramfs collector uses Plymouth's upstream asset installer
+and dracut's dependency resolver for the selected theme, fonts, udev and XKB
+data. The existing BusyBox init starts Plymouth before finding/mounting rootfs,
+stops the temporary udev instance, and asks Plymouth to chroot into the mounted
+root. Its `/run` state survives into the normal systemd services. This preserves
+root selection, partition write protection and visible text on handoff failure.
+Collectors never copy host accounts, SSH keys or per-device calibration.
+The same assembly is used by the public boot CI. Physical orientation, early
+button input and SDDM handoff still require device validation.
 
 The active project target profile is maintained in `project.conf`: native
 C/C++ uses `-mcpu=oryon-1+rng+fp16`, kernel/KMP builds pass the same CPU setting

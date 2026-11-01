@@ -1,13 +1,13 @@
 # Maintainer: h0cheung
 pkgname=kshim-freedom
 pkgver=20261024
-pkgrel=8
+pkgrel=10
 pkgdesc='Native kShim tools and atomic kernel deployment for Freedom on Elden'
 arch=(aarch64)
 license=(GPL-3.0-or-later)
 options=(!strip !debug !lto)
 depends=(python openssl dtc cpio gzip kmod util-linux zstd xz patch kbd)
-provides=('kshim-boot-argument-defaults=1')
+provides=('kshim-boot-argument-defaults=2' 'kshim-initramfs-hooks=1')
 makedepends=(git cmake ninja gcc make python-kconfiglib)
 _freedom_commit=9788014a0293dc26745b000d02854ad88ef73e88
 # Retain the validated launcher; later upstream enables native UFS settings I/O.
@@ -54,12 +54,12 @@ sha256sums+=(
   '82310d3378dcb7766b3522649ac9a50ae51af118fe7a1d7c1281d31baee2563f'
   '874be0c26d1a76a288cd76eee134d50b1542c8ba3a3691f045cfac67cae13b29'
   'ceb2971f7e88fc05e6da25aad6ee81555f1207cc2387de0fe0be9d4432d8e267'
-  '8eefec2a0346cb9dfc9084538dd6490f85d19087d518f263b09f670283c4cd89'
+  'ebe4bf77a453945108f0289c7b58a2b56625f666cdf884d42d92d9134dd97eab'
   'e168d527e3774a5cabee4bff1fda887940a41ccdbf4695bc27b6d90430fc438a'
   'ff87a71c77831aa5b8602a08137ec43daa2589f6bbf9746fcbdd501d73309258'
-  'd2772204e925967813a1f8b66b6d6d4d07e2b52ffde438072283799e5830cf2c'
+  '016c1a12353e67d1458dcc6778aabe0f283b9240541c3ec8d8a3c1975990ff43'
   'd958b0a8790ab04525c958af20ecebb30734cce5f4d58701d1343deb6372881c'
-  'e00d9e3aa3e183b4ecce1651df0ba9ac3ad76e36425cd5ee9361a7bb47fdb3a4'
+  '99d53b3ab4ba028360e04b489ecadb05fc7f7c96bdcdbf4bfaf637f6b81cd8a5'
   '458851f4bd96ceceebf773bfd2fc6ebfe21c81d09073d64a5a2e618576b16b01'
   'bde08b7fb0909ca2e5f9fb389d0bf0c9898541c20bdbf50cb24645a64a6d8517'
   '3030fdebf5eb464bdf9ecbeda7d7a29ffbc6dd46d8fa8d4c9241fd0d8d8173bb'

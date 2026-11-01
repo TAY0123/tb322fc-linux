@@ -1,4 +1,14 @@
 -------------------------------------------------------------------
+Sun Nov 01 10:21:34 UTC 2026 - h0cheung <hcheunh@gmail.com>
+
+- Run optional packaged initramfs collectors before creating the archive.
+- Support early Plymouth without changing root selection or write protection.
+- Rebuild boot when packaged Plymouth configuration or theme assets change.
+- Correct the default landscape console rotation to clockwise (90 degrees).
+- Prepend packaged defaults so quiet cannot override explicit loglevel values.
+- Provide kshim-boot-argument-defaults 2 for the corrected argument ordering.
+
+-------------------------------------------------------------------
 Sun Nov 01 10:06:21 UTC 2026 - h0cheung <hcheunh@gmail.com>
 
 - Refresh the configured boot slot after RPM transactions changing the

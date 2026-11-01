@@ -1,6 +1,9 @@
 From: h0cheung <hcheunh@gmail.com>
 Subject: Retain openSUSE theme watermark paths on 26.134.222
 
+Keep the distribution logo in both BGRT and its Spinner base. Spinner is
+also usable on Device Tree tablets without a firmware-provided BGRT logo.
+
 --- a/src/plugins/splash/two-step/plugin.c
 +++ b/src/plugins/splash/two-step/plugin.c
 @@ -1205,7 +1205,11 @@
@@ -31,3 +34,23 @@ Subject: Retain openSUSE theme watermark paths on 26.134.222
  
  PLYMOUTH_FONT_PATH=""
  PLYMOUTH_FONT=$(grep "\bFont *= *" ${PLYMOUTH_SYSROOT}${PLYMOUTH_THEME_DIR}/${PLYMOUTH_THEME_NAME}.plymouth | sed 's/Font *= *//' | head -1)
+--- a/themes/bgrt/bgrt.plymouth.desktop
++++ b/themes/bgrt/bgrt.plymouth.desktop
+@@ -7,6 +7,7 @@
+ Font=Cantarell 12
+ TitleFont=Cantarell Light 30
+ ImageDir=@PLYMOUTH_THEME_PATH@/spinner
++WatermarkPath=/usr/share/pixmaps/distribution-logos/light-inline.png
+ DialogHorizontalAlignment=.5
+ DialogVerticalAlignment=.382
+ TitleHorizontalAlignment=.5
+--- a/themes/spinner/spinner.plymouth.desktop
++++ b/themes/spinner/spinner.plymouth.desktop
+@@ -7,6 +7,7 @@
+ Font=Cantarell 12
+ TitleFont=Cantarell Light 30
+ ImageDir=@PLYMOUTH_THEME_PATH@/spinner
++WatermarkPath=/usr/share/pixmaps/distribution-logos/light-inline.png
+ DialogHorizontalAlignment=.5
+ DialogVerticalAlignment=.382
+ TitleHorizontalAlignment=.5

@@ -25,6 +25,13 @@ def digest(path):
         return hashlib.file_digest(stream, 'sha256').hexdigest()
 
 
+def populate_initramfs_hooks(root, directory):
+    """Run packaged asset collectors; a failed collector must stop the build."""
+    for hook in sorted(directory.glob('*.sh')):
+        if hook.is_file() and os.access(hook, os.X_OK):
+            run([hook, root])
+
+
 def initramfs(config, output):
     """Use the already tested minimal F2FS handoff and early GPU firmware."""
     lib = Path('/usr/lib/kshim-freedom')
@@ -58,6 +65,7 @@ def initramfs(config, output):
                     run(['xz', '-dc', str(src) + '.xz'], stdout=out)
             else:
                 raise FileNotFoundError(src)
+        populate_initramfs_hooks(root, lib / 'initramfs.d')
         # The init script copies early firmware into the real root's view.
         paths = sorted(root.rglob('*'))
         for path in paths:

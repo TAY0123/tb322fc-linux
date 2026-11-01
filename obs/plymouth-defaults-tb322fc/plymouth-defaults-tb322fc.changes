@@ -1,4 +1,14 @@
 -------------------------------------------------------------------
+Sun Nov 01 10:21:34 UTC 2026 - h0cheung <hcheunh@gmail.com>
+
+- Select Spinner with the official Tumbleweed logo on this non-BGRT tablet.
+- Correct the internal-panel orientation to 90 degrees.
+- Retain the last splash frame for SDDM handoff; preserve console verbosity.
+- Start Plymouth in the BusyBox initramfs using upstream asset collection,
+  early udev and XKB data; carry its state across the root handoff.
+- Require the corrected theme watermark and boot-default ordering.
+
+-------------------------------------------------------------------
 Sun Nov 01 07:23:47 UTC 2026 - h0cheung <hcheunh@gmail.com>
 
 - Keep official plymouth-branding-openSUSE and its BGRT theme unchanged.

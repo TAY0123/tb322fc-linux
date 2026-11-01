@@ -6,7 +6,7 @@
 
 原厂 boot 基底与 AVB 私钥不放入软件包。设备配置 `/etc/kshim-freedom/config.json` 指定其本地路径、原厂镜像哈希、根 PARTUUID、cmdline、早期固件及 pkgbase；私钥位于 root 限权目录，权限须为 0600。部署目标固定为本项目的 Linux boot_a，拒绝其他机型或根分区不匹配的环境。
 
-生成 boot 时，未显式指定的控制台参数默认使用 `fbcon=rotate:3`、
+生成 boot 时，未显式指定的控制台参数默认使用 `fbcon=rotate:1`、
 `fbcon=font:TER16x32` 和 `vconsole.font=latarcyrheb-sun32`，使已有配置也能获得
 横屏大字体。需要内核启用 framebuffer console rotation、内置 TER16x32 字体，
 并安装 `kbd`。用户在 `cmdline` 中显式指定的旋转或字体优先于这些默认值；
@@ -14,8 +14,15 @@
 
 软件包还可在 `/usr/lib/kshim-freedom/cmdline.d/*.conf` 提供默认启动参数。
 这些文件按名称排序读取，仅解析参数及注释，不执行 shell；设备 `cmdline` 中的同名参数优先。
+补充的参数放在显式参数之前，避免 `quiet` 重置管理员指定的 `loglevel`。
 Plymouth 机型配置包使用这一机制启用动画和自身的横屏绘制。新增或移除配置后需重新生成 boot；
 可在设备配置中使用 `splash=verbose` 默认显示文字，或 `plymouth.enable=0` 禁用 Plymouth。
+
+打包器还会执行 `/usr/lib/kshim-freedom/initramfs.d/*.sh` 中可执行的资源收集脚本，
+参数是临时 initramfs 目录；任何收集失败都会中止生成，不刷入缺失依赖的镜像。
+openSUSE 的 Plymouth 机型包通过此接口加入主题、字体、udev 与按键布局，
+在寻找根分区之前显示动画，并通过 `update-root-fs` 将同一进程交给真实根的 systemd。
+原有根分区选择、Android 分区写保护和挂载失败文字提示保持不变。
 
 `freedom-kernel-update --kernel <release> --stage-only` 生成并校验候选，`--deploy` 在完整备份后写 A 并回读；配置 `deploy_boot_a` 可让更新 hook 自动部署。程序不重启系统，不写 B/recovery。候选、打包检查、签名和部署结果位于 `/var/lib/kshim-freedom/candidates/`，最新结果见 `latest.json`。
 

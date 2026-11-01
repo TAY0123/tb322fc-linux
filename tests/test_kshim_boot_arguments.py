@@ -16,14 +16,14 @@ class BootArguments(unittest.TestCase):
         result = MODULE.boot_arguments(
             'console=tty0 fbcon=map:0 fbcon=font:TER16x32 root=PARTUUID=old',
             'PARTLABEL=rootfs').split()
-        self.assertIn('fbcon=rotate:3', result)
+        self.assertIn('fbcon=rotate:1', result)
         self.assertIn('vconsole.font=latarcyrheb-sun32', result)
         self.assertEqual(result.count('fbcon=font:TER16x32'), 1)
         self.assertEqual([x for x in result if x.startswith('root=')],
                          ['root=PARTLABEL=rootfs'])
 
     def test_combined_fbcon_and_userspace_font_overrides_survive(self):
-        source = 'console=tty0 fbcon=map:0,rotate:1,font:VGA8x16 vconsole.font=custom'
+        source = 'console=tty0 fbcon=map:0,rotate:3,font:VGA8x16 vconsole.font=custom'
         result = MODULE.boot_arguments(source, 'PARTLABEL=rootfs')
         self.assertEqual(result, source + ' root=PARTLABEL=rootfs')
 
@@ -32,16 +32,23 @@ class BootArguments(unittest.TestCase):
         self.assertEqual(MODULE.boot_arguments(result, 'PARTLABEL=rootfs'), result)
 
     def test_package_defaults_preserve_debug_and_orientation_overrides(self):
-        defaults = ['splash', 'plymouth.panel-rotation=270']
+        defaults = ['splash', 'plymouth.panel-rotation=90']
         result = MODULE.boot_arguments('console=tty0', 'PARTLABEL=rootfs', defaults)
-        self.assertIn(' splash ', result)
-        self.assertIn('plymouth.panel-rotation=270', result)
-        source = 'splash=verbose plymouth.panel-rotation=90'
+        self.assertIn('splash', result.split())
+        self.assertIn('plymouth.panel-rotation=90', result)
+        source = 'splash=verbose plymouth.panel-rotation=270'
         result = MODULE.boot_arguments(source, 'PARTLABEL=rootfs', defaults).split()
         self.assertNotIn('splash', result)
-        self.assertNotIn('plymouth.panel-rotation=270', result)
+        self.assertNotIn('plymouth.panel-rotation=90', result)
         self.assertIn('splash=verbose', result)
-        self.assertIn('plymouth.panel-rotation=90', result)
+        self.assertIn('plymouth.panel-rotation=270', result)
+
+    def test_quiet_default_precedes_explicit_log_level(self):
+        result = MODULE.boot_arguments('console=tty0 loglevel=7', 'PARTLABEL=rootfs',
+                                       ['quiet', 'splash']).split()
+        self.assertLess(result.index('quiet'), result.index('loglevel=7'))
+        self.assertEqual(MODULE.boot_arguments(' '.join(result), 'PARTLABEL=rootfs',
+                                              ['quiet', 'splash']).split(), result)
 
     def test_package_defaults_cannot_replace_root_or_escape_kernel_arguments(self):
         for token in ['root=/dev/other', '--', 'splash\ninit=/bin/sh']:
@@ -52,10 +59,10 @@ class BootArguments(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             self.assertEqual(MODULE.package_boot_defaults(root), [])
-            (root/'50-plymouth.conf').write_text('# Package defaults\nsplash\nplymouth.panel-rotation=270\n')
+            (root/'50-plymouth.conf').write_text('# Package defaults\nsplash\nplymouth.panel-rotation=90\n')
             (root/'ignored.rpmnew').write_text('ignored')
             self.assertEqual(MODULE.package_boot_defaults(root),
-                             ['splash', 'plymouth.panel-rotation=270'])
+                             ['splash', 'plymouth.panel-rotation=90'])
 
     def test_command_line_stays_single_line(self):
         for separator in ['\n', '\r', '\0']:

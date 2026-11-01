@@ -176,7 +176,7 @@ def prepare(name):
                           'bash recipe-stage.sh install %{buildroot}\n'
                           'install -Dm644 %{SOURCE3} %{buildroot}%{_prefix}/lib/kshim-freedom/rpm-boot-update.py\n',1)
         spec=spec.replace('\n%files -f files.list\n',
-                          '\n%transfiletriggerin -P 1000 -- /boot /usr/lib/modules /usr/lib/kshim-freedom\n'
+                          '\n%transfiletriggerin -P 1000 -- /boot /usr/lib/modules /usr/lib/kshim-freedom /usr/libexec/plymouth /usr/lib64/plymouth /usr/share/plymouth /etc/plymouth /usr/share/pixmaps/distribution-logos\n'
                           '/usr/bin/python3 %{_prefix}/lib/kshim-freedom/rpm-boot-update.py\n'
                           '\n%files -f files.list\n',1)
     if name=='directx-shader-compiler-render':

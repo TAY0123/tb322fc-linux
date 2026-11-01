@@ -27,7 +27,7 @@ def boot_arguments(cmdline, root_selector, defaults=()):
     fbcon_options = {option.split(':', 1)[0]
                      for token in tokens if token.startswith('fbcon=')
                      for option in token[len('fbcon='):].split(',')}
-    for option, value in [('rotate', '3'), ('font', 'TER16x32')]:
+    for option, value in [('rotate', '1'), ('font', 'TER16x32')]:
         if option not in fbcon_options:
             tokens.append(f'fbcon={option}:{value}')
     # systemd-vconsole-setup would otherwise restore the distribution's 8x16
@@ -35,15 +35,18 @@ def boot_arguments(cmdline, root_selector, defaults=()):
     if not any(token.startswith('vconsole.font=') for token in tokens):
         tokens.append('vconsole.font=latarcyrheb-sun32')
     keys = {token.split('=', 1)[0] for token in tokens}
+    missing_defaults = []
     for token in defaults:
         key = token.split('=', 1)[0]
         if key in ('root', '--') or any(c.isspace() or c == '\0' for c in token):
             raise ValueError('invalid packaged boot default: ' + repr(token))
         if key not in keys:
-            tokens.append(token)
+            missing_defaults.append(token)
             keys.add(key)
     tokens.append('root=' + root_selector)
-    return ' '.join(tokens)
+    # Put defaults first: quiet changes the kernel loglevel, so an explicit
+    # loglevel in the device configuration must be parsed after it.
+    return ' '.join(missing_defaults + tokens)
 
 
 def main():
