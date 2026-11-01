@@ -1,0 +1,82 @@
+name: Build openSUSE images
+on:
+  workflow_dispatch:
+    inputs:
+      firmware_url:
+        description: 'HTTPS model firmware bundle (or use FIRMWARE_URL secret)'
+        type: string
+        required: false
+      firmware_sha256:
+        description: 'Pinned bundle SHA256 (or FIRMWARE_SHA256 repository variable)'
+        type: string
+        required: false
+permissions:
+  contents: read
+concurrency:
+  group: opensuse-rootfs-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  rootfs:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install assembly tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3 curl gnupg xz-utils zstd util-linux alsa-utils acl attr qemu-user-static
+      - name: Fetch and verify model firmware only
+        env:
+          FIRMWARE_URL: ${{ secrets.FIRMWARE_URL || inputs.firmware_url }}
+          FIRMWARE_SHA256: ${{ inputs.firmware_sha256 || vars.FIRMWARE_SHA256 }}
+        run: |
+          bash scripts/ci/prepare-inputs.sh
+          bash scripts/build-topology.sh
+          python3 scripts/fetch-sources.py freedom
+      - name: Prepare a fresh signed Tumbleweed rootfs
+        run: sudo python3 scripts/opensuse/build-rootfs.py prepare --work build/opensuse-ci
+      - name: Install current OBS packages and configure first boot
+        run: sudo python3 scripts/opensuse/build-rootfs.py assemble --work build/opensuse-ci
+      - name: Stage hash-pinned model firmware
+        run: sudo python3 scripts/opensuse/stage-firmware.py build/opensuse-ci/rootfs
+      - name: Build generic signed boot image
+        run: |
+          umask 077
+          mkdir -p build/boot-inputs
+          trap 'rm -f build/boot-inputs/avb-key.pem' EXIT
+          python3 - <<'PY'
+          import base64, hashlib, json, pathlib, subprocess
+          config = json.load(open('configs/opensuse/boot.json'))
+          subprocess.run(['curl', '--fail', '--location', '--retry', '5',
+                          '--proto', '=https', '--proto-redir', '=https',
+                          '-o', 'build/boot-inputs/testkey.base64', config['avb_test_key_url']], check=True)
+          data = base64.b64decode(pathlib.Path('build/boot-inputs/testkey.base64').read_bytes(), validate=True)
+          assert hashlib.sha256(data).hexdigest() == config['avb_test_key_sha256']
+          pathlib.Path('build/boot-inputs/avb-key.pem').write_bytes(data)
+          archive = pathlib.Path('build/boot-inputs/stock-boot.img.zst')
+          subprocess.run(['curl', '--fail', '--location', '--retry', '5',
+                          '--proto', '=https', '--proto-redir', '=https',
+                          '-o', str(archive), config['stock_boot_url']], check=True)
+          image = archive.with_suffix('')
+          subprocess.run(['zstd', '-d', str(archive), '-o', str(image)], check=True)
+          assert hashlib.sha256(image.read_bytes()).hexdigest() == config['stock_boot_sha256']
+          PY
+          sudo python3 scripts/opensuse/make-boot.py build/opensuse-ci/rootfs \
+            artifacts/opensuse-rootfs/boot --stock-boot build/boot-inputs/stock-boot.img \
+            --key build/boot-inputs/avb-key.pem
+      - name: Audit and export generic rootfs
+        run: |
+          sudo python3 scripts/opensuse/export-rootfs.py build/opensuse-ci/rootfs \
+            artifacts/opensuse-rootfs/tb322fc-tumbleweed-aarch64.tar.zst
+          sudo cp build/opensuse-ci/rootfs/usr/share/tb322fc/rootfs-build/installed-packages.tsv \
+            artifacts/opensuse-rootfs/installed-packages.tsv
+          sudo cp build/opensuse-ci/obs-ready.json artifacts/opensuse-rootfs/obs-ready.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tb322fc-tumbleweed-rootfs-${{ github.run_id }}
+          path: artifacts/opensuse-rootfs/*
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14

@@ -1,0 +1,15 @@
+{
+  "stock_boot_url": "https://github.com/h0cheung/tb322fc-linux/releases/download/firmware-1.5.10.259/stock-boot.img.zst",
+  "stock_boot_sha256": "b428a31dadc5db3f91620c1f4114f5ee7702e34e0789ed9bf84a878a49898f20",
+  "root_selector": "PARTLABEL=rootfs",
+  "cmdline": "console=tty0 fbcon=map:0 fbcon=font:TER16x32 loglevel=3 bootconfig init=/init rdinit=/init ro panic=10 efi=noruntime usbcore.autosuspend=-1 fw_devlink=permissive arm-smmu.disable_bypass=0 clk_ignore_unused pd_ignore_unused regulator_ignore_unused initcall_blacklist=clk_disable_unused,regulator_init_complete,genpd_power_off_unused mem_sleep_default=s2idle",
+  "early_firmware": [
+    "qcom/gen80000_gmu.bin",
+    "qcom/gen80000_sqe.fw",
+    "qcom/gen80000_aqe.fw",
+    "qcom/sm8750/gen80000_zap.mbn",
+    "qcom/sm8750/lenovo/elden/gen80000_zap.mbn"
+  ],
+  "avb_test_key_url": "https://android.googlesource.com/platform/external/avb/+/34b6b49a81cfb8ce67c87010a4e08467077dc71b/test/data/testkey_rsa4096.pem?format=TEXT",
+  "avb_test_key_sha256": "6a224754880a57ab9cbd308267cd157d94cf05a1c8cb851aec4090e045d24121"
+}

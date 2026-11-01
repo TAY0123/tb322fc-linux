@@ -3,10 +3,17 @@
 Mainline Linux for the Lenovo Legion Tab Y700 Gen4, based on Qualcomm SM8750
 (Snapdragon 8 Elite), device codename **elden**.
 
-This repository integrates the Lenovo TB322FC with Arch Linux Ports. The current
-kernel package pins Linux 7.2.6 plus ArmadaOS Freedom hardware support, with local
-configuration and compatibility patches. Kernel, headers, ALS DKMS and kShim are
-separate packages; upstream source is referenced at exact revisions.
+The default `opensuse` branch integrates Tumbleweed AArch64 with the
+[`home:h-cheung:tb322fc` OBS project](https://build.opensuse.org/project/show/home:h-cheung:tb322fc).
+It includes Plasma Desktop, Plasma Mobile and a Steam session. Device packages
+use the Snapdragon 8 Elite CPU profile; the kernel and ALS module retain
+openSUSE's kernel/KMP package layout.
+
+Start with the [openSUSE build and installation notes](docs/opensuse-ci.md).
+The image workflow builds a matching rootfs and boot image. Public artifacts
+contain hash-pinned model firmware, never personal sensor calibration, login
+credentials or trusted SSH keys. First boot creates your own account through
+Plasma Setup. The earlier Arch packaging remains available on `master`.
 
 See the [2026-10-29 Freedom sync and Gen4 DPU rotation notes](docs/freedom-sync-20261029.md)
 for the imported changes, candidate switch and validation status.

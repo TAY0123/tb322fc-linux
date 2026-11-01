@@ -1,0 +1,39 @@
+{
+  "bootstrap": {
+    "url": "https://download.opensuse.org/ports/aarch64/tumbleweed/appliances/openSUSE-Tumbleweed-ARM-JeOS.aarch64-rootfs.aarch64-2026.07.14-Snapshot20261020.tar.xz",
+    "sha256": "0d7676bf4771e5b2639282b86c6332f28808ea1ed46e5eb944c83cb5f58782a7",
+    "signing_key_url": "https://download.opensuse.org/ports/aarch64/tumbleweed/repo/oss/repodata/repomd.xml.key",
+    "signing_key_fingerprint": "AD485664E901B867051AB15F35A2F86E29B700A4"
+  },
+  "repository": {
+    "url": "https://download.opensuse.org/repositories/home:/h-cheung:/tb322fc/openSUSE_Tumbleweed/",
+    "signing_key_fingerprint": "E872D00A4851A29299EF79D896E8448A575B119B"
+  },
+  "f2fs": {
+    "mkfs_args": [
+      "-w",
+      "4096",
+      "-b",
+      "4096",
+      "-g",
+      "android",
+      "-O",
+      "project_quota,extra_attr"
+    ],
+    "mount_options": [
+      "rw",
+      "noatime",
+      "discard",
+      "reserve_root=32768",
+      "resuid=0",
+      "resgid=0",
+      "fsync_mode=posix",
+      "errors=remount-ro"
+    ],
+    "label": "opensuse-root",
+    "references": [
+      "https://github.com/polygraphene/android_device_lenovo_TB322FC/blob/c9c6a9f1287e5b416c3480c5fe06b23dc54c9ab8/recovery.fstab#L47",
+      "https://github.com/polygraphene/android_bootable_recovery/blob/ced4ad75f311fc8a3350e21de415c23d5f0aec74/partition.cpp#L2552"
+    ]
+  }
+}
