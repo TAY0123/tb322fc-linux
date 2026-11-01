@@ -6,6 +6,12 @@
 
 原厂 boot 基底与 AVB 私钥不放入软件包。设备配置 `/etc/kshim-freedom/config.json` 指定其本地路径、原厂镜像哈希、根 PARTUUID、cmdline、早期固件及 pkgbase；私钥位于 root 限权目录，权限须为 0600。部署目标固定为本项目的 Linux boot_a，拒绝其他机型或根分区不匹配的环境。
 
+生成 boot 时，未显式指定的控制台参数默认使用 `fbcon=rotate:3`、
+`fbcon=font:TER16x32` 和 `vconsole.font=latarcyrheb-sun32`，使已有配置也能获得
+横屏大字体。需要内核启用 framebuffer console rotation、内置 TER16x32 字体，
+并安装 `kbd`。用户在 `cmdline` 中显式指定的旋转或字体优先于这些默认值；
+`vconsole.font` 会按 systemd 的规则覆盖 `/etc/vconsole.conf` 的 `FONT`。
+
 `freedom-kernel-update --kernel <release> --stage-only` 生成并校验候选，`--deploy` 在完整备份后写 A 并回读；配置 `deploy_boot_a` 可让更新 hook 自动部署。程序不重启系统，不写 B/recovery。候选、打包检查、签名和部署结果位于 `/var/lib/kshim-freedom/candidates/`，最新结果见 `latest.json`。
 
 自动部署只选择仍归属于配置内核包的模块目录，避免 ALS/DKMS 更新 hook 误选保留的回退目录；显式 `--kernel` 仍可选择指定版本。

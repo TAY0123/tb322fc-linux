@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Sun Nov 01 06:58:47 UTC 2026 - h0cheung <hcheunh@gmail.com>
+
+- Default generated boot arguments to landscape and 16x32 console fonts,
+  including systemd-vconsole-setup; retain explicit administrator overrides.
+- Require kbd for the packaged 16x32 userspace console font.
+- Include the maintained PARTLABEL=rootfs selector for generic boot images.
+
+-------------------------------------------------------------------
 Sat Oct 31 16:30:00 UTC 2026 - h0cheung <hcheunh@gmail.com>
 
 - Retain the openSUSE recipe adaptations when refreshing local sources:

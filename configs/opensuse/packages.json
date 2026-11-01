@@ -1,6 +1,7 @@
 {
   "distribution": [
     "systemd",
+    "kbd",
     "udev",
     "dbus-1",
     "dbus-1-daemon",

@@ -75,7 +75,7 @@ for line in (ROOT/'configs/opensuse/kernel.config').read_text().splitlines():
     if not line or line.startswith('#'):continue
     symbol,value=line.split('=',1)
     action={'y':'--enable','m':'--module','n':'--disable'}[value]
-    subprocess.run([str(src/'scripts/config'),'--file',str(config/'freedom'),action,symbol],check=True)
+    subprocess.run([str(src/'scripts/config'),'--file',str(config/'freedom'),'--keep-case',action,symbol],check=True)
 with tarfile.open(stage/'config.tar.bz2','w:bz2') as t:t.add(config.parent,arcname='config')
 (stage/'config.conf').write_text('+arm64 arm64/freedom\n')
 (stage/'source-timestamp').write_text('2026-10-31 09:00:00 +0000\nGIT Revision: 9788014a0293dc26745b000d02854ad88ef73e88\n')

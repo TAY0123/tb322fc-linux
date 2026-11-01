@@ -94,6 +94,15 @@ rotation, set `Y700_ROTATION=gpu` in
 [device validation record](../docs/freedom-sync-20261029.md) for the expected
 DRM plane state and GPU fallback.
 
+The kernel also enables framebuffer-console rotation and the built-in
+`TER16x32` font. kShim's boot generator defaults to `fbcon=rotate:3` and a
+16x32 font, then keeps that size after root handoff with
+`vconsole.font=latarcyrheb-sun32` from `kbd`. These defaults also apply when
+rebuilding boot for an existing installation; explicit `fbcon` rotation/font
+and `vconsole.font` arguments remain authoritative. The same arguments are
+listed in the public boot profile. Console rotation is independent of
+Gamescope and Plymouth; the landscape direction still needs a device check.
+
 The active project target profile is maintained in `project.conf`: native
 C/C++ uses `-mcpu=oryon-1+rng+fp16`, kernel/KMP builds pass the same CPU setting
 through `KCFLAGS`, and Rust uses `target-cpu=oryon-1` with `+rand,+fp16`.

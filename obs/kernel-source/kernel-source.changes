@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Sun Nov 01 06:58:47 UTC 2026 - h0cheung <hcheunh@gmail.com>
+
+- Enable framebuffer console rotation and the TER16x32 built-in font
+  for the tablet's landscape text console.
+
+-------------------------------------------------------------------
 Sun Nov  1 06:28:59 UTC 2026 - h0cheung <hcheunh@gmail.com>
 
 - Install the versioned freedom-dpu-rotation capability marker so an

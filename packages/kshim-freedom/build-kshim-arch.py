@@ -12,6 +12,25 @@ import tempfile
 import uuid
 
 
+def boot_arguments(cmdline, root_selector):
+    """Apply Gen4 console defaults while preserving explicit boot overrides."""
+    if any(c in cmdline for c in "\x00\r\n"):
+        raise ValueError("cmdline must be one line")
+    tokens = [x for x in cmdline.split() if not x.startswith("root=")]
+    fbcon_options = {option.split(':', 1)[0]
+                     for token in tokens if token.startswith('fbcon=')
+                     for option in token[len('fbcon='):].split(',')}
+    for option, value in [('rotate', '3'), ('font', 'TER16x32')]:
+        if option not in fbcon_options:
+            tokens.append(f'fbcon={option}:{value}')
+    # systemd-vconsole-setup would otherwise restore the distribution's 8x16
+    # font after the kernel's 16x32 console has already appeared.
+    if not any(token.startswith('vconsole.font=') for token in tokens):
+        tokens.append('vconsole.font=latarcyrheb-sun32')
+    tokens.append('root=' + root_selector)
+    return ' '.join(tokens)
+
+
 def main():
     project = next((p for p in Path(__file__).resolve().parents
                     if (p / "configs/freedom-sources.json").is_file()), Path("/usr/share/tb322fc"))
@@ -38,11 +57,10 @@ def main():
         parser.error("Freedom builder differs from the pinned source manifest")
     root_uuid = str(uuid.UUID(args.root_partuuid)) if args.root_partuuid else None
     root_selector = "PARTUUID=" + root_uuid if root_uuid else "PARTLABEL=rootfs"
-    if any(c in args.cmdline for c in "\x00\r\n"):
-        parser.error("cmdline must be one line")
-    tokens = [x for x in args.cmdline.split() if not x.startswith("root=")]
-    tokens.append("root=" + root_selector)
-    cmdline = " ".join(tokens)
+    try:
+        cmdline = boot_arguments(args.cmdline, root_selector)
+    except ValueError as error:
+        parser.error(str(error))
     # Keep upstream source intact; apply the reviewed Arch-layout delta.
     patches = []
     for name in manifest["kshim_builder_patches"]:
