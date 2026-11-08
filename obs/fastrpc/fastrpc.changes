@@ -1,0 +1,7 @@
+-------------------------------------------------------------------
+Sun Nov  8 13:05:00 UTC 2026 - h0cheung <hcheunh@gmail.com>
+
+- Package the tested upstream 1.0.8 CDSP client runtime and headers.
+- Add Y700 Gen 4 library paths, the system DMA heap and active-seat
+  access to the nonsecure CDSP node. Do not start ADSP daemons.
+- Firmware and DSP libraries are provisioned outside OBS.

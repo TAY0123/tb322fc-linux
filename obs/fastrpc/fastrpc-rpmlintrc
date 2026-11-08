@@ -1,0 +1,3 @@
+# QNN dlopen("libcdsprpc.so") and CDSP listener clients need these names at runtime.
+addFilter(r'libcdsprpc1\..*: E: devel-file-in-non-devel-package .* /usr/lib64/libcdsprpc\.so$')
+addFilter(r'libcdsprpc1\..*: E: devel-file-in-non-devel-package .* /usr/lib64/libcdsp_default_listener\.so$')

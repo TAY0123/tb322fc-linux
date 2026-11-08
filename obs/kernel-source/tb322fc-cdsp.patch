@@ -1,0 +1,48 @@
+From: TB322FC maintainers
+Subject: [PATCH] arm64: dts: qcom: enable the Elden CDSP compute domain
+
+Use the stock split firmware and the nonsecure FastRPC context bank tested
+with QNN/HTP v79. Expand the unsupported stream-ID mask into equivalent
+explicit streams, and provide eight sessions for shared-buffer inference.
+ADSP sensor/audio nodes and secure FastRPC permissions are unchanged.
+
+--- a/arch/arm64/boot/dts/qcom/sm8750-lenovo-elden.dts
++++ b/arch/arm64/boot/dts/qcom/sm8750-lenovo-elden.dts
+@@ -1970,10 +1970,33 @@
+ };
+ 
+ &remoteproc_cdsp {
+-	firmware-name = "qcom/sm8750/LENOVO/elden/cdsp.mbn",
+-			"qcom/sm8750/LENOVO/elden/cdsp_dtb.mbn";
+-
+-	status = "disabled";
++	firmware-name = "qcom/sm8750/cdsp.mdt", "qcom/sm8750/cdsp_dtb.mdt";
++	status = "okay";
++
++	glink-edge {
++		fastrpc {
++			compute-cb@1 {
++				/* SM8750 cannot represent the inherited 0x40 SID mask. */
++				iommus = <&apps_smmu 0x19c1 0x0>,
++					 <&apps_smmu 0x0c21 0x0>,
++					 <&apps_smmu 0x0c01 0x0>,
++					 <&apps_smmu 0x0c41 0x0>;
++				qcom,nsessions = <8>;
++			};
++
++			/* Use the context bank validated with the stock CDSP firmware. */
++			compute-cb@2 { status = "disabled"; };
++			compute-cb@3 { status = "disabled"; };
++			compute-cb@4 { status = "disabled"; };
++			compute-cb@5 { status = "disabled"; };
++			compute-cb@6 { status = "disabled"; };
++			compute-cb@7 { status = "disabled"; };
++			compute-cb@8 { status = "disabled"; };
++			compute-cb@12 { status = "disabled"; };
++			compute-cb@13 { status = "disabled"; };
++			compute-cb@14 { status = "disabled"; };
++		};
++	};
+ };
+ 
+ &spi4 {

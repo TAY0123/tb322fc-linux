@@ -40,7 +40,15 @@
  %endif
  Source3:        kernel-source.rpmlintrc
  Source14:       series.conf
-@@ -143,7 +141,7 @@
+@@ -111,6 +109,7 @@
+ Source114:      patches.drm.tar.bz2
+ Source120:      kabi.tar.bz2
+ Source121:      sysctl.tar.bz2
++Source294:      tb322fc-cdsp.patch
+ Requires(post): coreutils sed
+ # Source is only complete with devel files.
+ Requires:       kernel-devel%variant = %version-%source_rel
+@@ -143,7 +142,7 @@
  # 2) decrease build times (bsc#962356 boo#1175882)
  %define _binary_payload w9.bzdio
  
@@ -49,7 +57,7 @@
  
  %description
  Linux kernel sources with many fixes and improvements.
-@@ -230,6 +228,8 @@
+@@ -230,9 +229,15 @@
  %endif
  
  %prep
@@ -58,6 +66,13 @@
  
  # Unpack all sources and patches
  %setup -q -c -T -a 100 -a 101 -a 102 -a 103 -a 104 -a 105 -a 106 -a 108 -a 109 -a 110 -a 111 -a 113 -a 114 -a 120 -a 121
++
++# Board CDSP support is shared with the binary flavor.
++install -m 644 %{SOURCE294} patches.addon/tb322fc-cdsp.patch
++printf '%s\n' tb322fc-cdsp.patch >> patches.addon/series
+ 
+ %build
+ %install
 --- kernel-syms.spec.orig
 +++ kernel-syms.spec
 @@ -16,39 +16,36 @@

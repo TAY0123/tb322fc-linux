@@ -1,0 +1,3 @@
+# Local active-seat applications may use the nonsecure compute domain.
+SUBSYSTEM=="misc", KERNEL=="fastrpc-cdsp", TAG+="uaccess"
+SUBSYSTEM=="dma_heap", KERNEL=="system", TAG+="uaccess"

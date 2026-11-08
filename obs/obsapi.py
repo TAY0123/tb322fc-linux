@@ -19,7 +19,7 @@ API = osc.conf.config['apiurl']
 # tablet: the public workers do not advertise RNG, so RNG-specific tests must
 # use a runtime capability check instead of running it unconditionally.
 TARGET_PACKAGES = {
-    'als-bridge-kmp', 'armada-rgb', 'directx-shader-compiler-render', 'ffmpeg-v4l2m2m',
+    'als-bridge-kmp', 'armada-rgb', 'directx-shader-compiler-render', 'fastrpc', 'ffmpeg-v4l2m2m',
     'gamescope-armada', 'gtk2', 'hexagonrpc', 'iio-sensor-proxy-y700',
     'inputplumber-g9-2026', 'kernel-source', 'kettle-framegen-armada', 'kshim-freedom',
     'libcamera-y700', 'libkscreen6', 'libplacebo', 'libssc', 'llvm-mingw-arm64ec', 'mangohud-armada', 'mesa-y700-gen4',

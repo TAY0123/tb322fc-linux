@@ -233,6 +233,7 @@ Source113:      patches.kabi.tar.bz2
 Source114:      patches.drm.tar.bz2
 Source120:      kabi.tar.bz2
 Source121:      sysctl.tar.bz2
+Source294:      tb322fc-cdsp.patch
 # These files are found in the kernel-source package:
 NoSource:       0
 NoSource:       3
@@ -1269,6 +1270,10 @@ fi
 
 # Unpack all sources and patches
 %setup -q -c -T -a 0 -a 100 -a 101 -a 102 -a 103 -a 104 -a 105 -a 106 -a 108 -a 109 -a 110 -a 111 -a 113 -a 114 -a 120 -a 121
+
+# Board CDSP support is shared with the source/devel RPMs.
+install -m 644 %{SOURCE294} patches.addon/tb322fc-cdsp.patch
+printf '%s\n' tb322fc-cdsp.patch >> patches.addon/series
 
 mkdir -p %kernel_build_dir
 

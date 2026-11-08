@@ -415,6 +415,121 @@
       "path": "qcom/sm8750/adsp_dtb.mdt",
       "size": 4044,
       "sha256": "51e1996d83ae8e1eed07d5feeca20151cd5a5d495f924a16e1d9d5f40b6f2d60"
+    },
+    {
+      "path": "qcom/sm8750/cdsp/fastrpc_shell_unsigned_3",
+      "size": 1335000,
+      "sha256": "5874f7cc7b7764f0b4200db5e517050709f47ea81647a4b5e8ffa57ddd206cf5"
+    },
+    {
+      "path": "qcom/sm8750/cdsp/libc++.so.1",
+      "size": 4032184,
+      "sha256": "43c7b5220b20e31c462b088c04401fab675982c6120312076d730e70c57c40bc"
+    },
+    {
+      "path": "qcom/sm8750/cdsp/libc++abi.so.1",
+      "size": 901744,
+      "sha256": "c29fe8ca1e6d57c11183fd33368dc789850784d1afacd60f2af74de956838909"
+    },
+    {
+      "path": "qcom/sm8750/cdsp.b00",
+      "size": 564,
+      "sha256": "7a7168c647e0e1a2e76d4887b6314c1795b97282638f866b473b4fc12c600d3c"
+    },
+    {
+      "path": "qcom/sm8750/cdsp.b01",
+      "size": 27636,
+      "sha256": "880545096902020b30e28289c26cedf24f22264e6a2c9bbfa80d02fd51db63d3"
+    },
+    {
+      "path": "qcom/sm8750/cdsp.b02",
+      "size": 79076,
+      "sha256": "bca76f4d5bf7545cb4b9c4a52dade14cdb0350d4a61921b8d014a5ba79397df5"
+    },
+    {
+      "path": "qcom/sm8750/cdsp.b03",
+      "size": 140303,
+      "sha256": "8fc533cc9bb39157fd59a5d668659efcd248d857c9962ddb34185b56ce6e553a"
+    },
+    {
+      "path": "qcom/sm8750/cdsp.b04",
+      "size": 1376,
+      "sha256": "1a644f200134c0399830121eede772708f8e5ef35d322f8463ad22095e98e595"
+    },
+    {
+      "path": "qcom/sm8750/cdsp.b05",
+      "size": 2412804,
+      "sha256": "5d880b987ef28d0ba07deb59c2d6261cf398669149d8529c6d37aceb9ac277a0"
+    },
+    {
+      "path": "qcom/sm8750/cdsp.b06",
+      "size": 114696,
+      "sha256": "6eb1a670ee67c2b43c948ea4a0be38eeee62af23c658fd11e0354ca8978d262b"
+    },
+    {
+      "path": "qcom/sm8750/cdsp.b07",
+      "size": 2840,
+      "sha256": "5ad22c774bc63c85eb54f598d2461410636229fcddca8528ca64c292a135a359"
+    },
+    {
+      "path": "qcom/sm8750/cdsp.b08",
+      "size": 124406,
+      "sha256": "d9be659121deeb5b644e8ff3de716a65014c4bbefaacb94b0c3e162afc135596"
+    },
+    {
+      "path": "qcom/sm8750/cdsp.b09",
+      "size": 786460,
+      "sha256": "281cc575fba645a0a906edc2dcc46b5dad90fc04cf77f043fc033cfc5a907860"
+    },
+    {
+      "path": "qcom/sm8750/cdsp.b10",
+      "size": 14016,
+      "sha256": "9ee6cf2264948f683e3c32749e54184d69a98ec266fc7d5e32e6b240d901a20a"
+    },
+    {
+      "path": "qcom/sm8750/cdsp.b11",
+      "size": 3184,
+      "sha256": "e55ab092fcc4ea149af944990cc610ed9be9922373e50c6de6e1e94c180f9a1b"
+    },
+    {
+      "path": "qcom/sm8750/cdsp.b12",
+      "size": 114256,
+      "sha256": "ae9678ba0bd99b045e356e7b7296dd6e6ad14e8def23b359a4e6de9512a7adba"
+    },
+    {
+      "path": "qcom/sm8750/cdsp.b13",
+      "size": 5600,
+      "sha256": "6eb64e59fa121afb5cc1043d72016b50b1ea4ce77e911ae694fbdd3ecb349eac"
+    },
+    {
+      "path": "qcom/sm8750/cdsp.b15",
+      "size": 4520,
+      "sha256": "73014c6b6c2c10ac1d5b06194720c1b0a988ed15b260a9dcc881f4dc8766e76e"
+    },
+    {
+      "path": "qcom/sm8750/cdsp.mdt",
+      "size": 5084,
+      "sha256": "8bce74d1c6bf74424ff2fbbea9a52908771ff5e05759a78964aaf85e7090e928"
+    },
+    {
+      "path": "qcom/sm8750/cdsp_dtb.b00",
+      "size": 148,
+      "sha256": "31747c7001fa4a31aaac7e8c41d6dea16659a8cd33e51e90ecb6469509e7e216"
+    },
+    {
+      "path": "qcom/sm8750/cdsp_dtb.b01",
+      "size": 29812,
+      "sha256": "8e0dab78ae581a1b10562e3348eb059b0de66040b4ec92d08bf58a56a4abc23c"
+    },
+    {
+      "path": "qcom/sm8750/cdsp_dtb.b02",
+      "size": 3896,
+      "sha256": "a6860679737a776d0870f1f4ba9a51e3ed934d84d0bc686450676b8f53dfedfb"
+    },
+    {
+      "path": "qcom/sm8750/cdsp_dtb.mdt",
+      "size": 4044,
+      "sha256": "7fd77420f4350c3deddead1cee1999205fdfe8433bd38bd1e33e4c6236ea7169"
     }
   ]
 }

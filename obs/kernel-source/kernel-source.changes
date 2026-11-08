@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Sun Nov  8 13:05:00 UTC 2026 - h0cheung <hcheunh@gmail.com>
+
+- Enable the TB322FC CDSP with stock split firmware, explicit SMMU
+  stream IDs and eight sessions on the validated compute context bank.
+- Leave production ThinLTO, scheduler and ADSP sensor/audio paths intact.
+
+-------------------------------------------------------------------
 Sun Nov 01 06:58:47 UTC 2026 - h0cheung <hcheunh@gmail.com>
 
 - Enable framebuffer console rotation and the TER16x32 built-in font
