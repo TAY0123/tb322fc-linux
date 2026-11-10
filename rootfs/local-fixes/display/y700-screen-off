@@ -1,0 +1,2 @@
+#!/bin/sh
+exec /usr/local/libexec/y700-screen-blank off

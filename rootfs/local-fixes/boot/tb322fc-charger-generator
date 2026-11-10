@@ -1,0 +1,20 @@
+#!/usr/bin/python3
+"""Route genuine bootloader charger boots to the charging target on slot B."""
+import os, shlex, sys
+from pathlib import Path
+
+def is_charger(cmdline):
+    return any(x == 'androidboot.mode=charger' for x in shlex.split(cmdline))
+
+def generate(output, cmdline, boot_desktop=False):
+    if boot_desktop or not is_charger(cmdline):
+        return
+    output = Path(output)
+    output.mkdir(parents=True, exist_ok=True)
+    (output/'default.target').symlink_to('/etc/systemd/system/tb322fc-charger.target')
+    for service in ['bluetooth.service', 'tb322fc-bluetooth-identity.service', 'NetworkManager.service']:
+        (output/service).symlink_to('/dev/null')
+
+if __name__ == '__main__':
+    generate(sys.argv[2], Path('/proc/cmdline').read_text(),
+             Path('/run/tb322fc-charger/boot-desktop').exists())

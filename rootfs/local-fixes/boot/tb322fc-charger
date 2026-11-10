@@ -1,0 +1,141 @@
+#!/usr/bin/python3
+"""Minimal charging display; hold Power for two seconds to start the desktop."""
+import array, fcntl, json, mmap, os, select, signal, struct, subprocess, time
+from pathlib import Path
+
+RUN = Path('/run/tb322fc-charger')
+BAT = Path('/sys/class/power_supply/qcom-battmgr-bat')
+FONT = {
+ '0':['111','101','101','101','111'], '1':['010','110','010','010','111'],
+ '2':['111','001','111','100','111'], '3':['111','001','111','001','111'],
+ '4':['101','101','111','001','001'], '5':['111','100','111','001','111'],
+ '6':['111','100','111','101','111'], '7':['111','001','010','010','010'],
+ '8':['111','101','111','101','111'], '9':['111','101','111','001','111'],
+ '%':['101','001','010','100','101'],
+}
+
+def online():
+    values=[]
+    for p in Path('/sys/class/power_supply').glob('*/online'):
+        try: values.append(int(p.read_text()))
+        except (OSError, ValueError): pass
+    return any(values) if values else None
+
+def desktop():
+    (RUN/'boot-desktop').touch()
+    subprocess.run(['systemctl','daemon-reload'], check=True)
+    subprocess.run(['systemctl','--no-block','isolate','graphical.target'], check=True)
+
+def open_framebuffer():
+    fd=os.open('/dev/fb0',os.O_RDWR)
+    v=bytearray(160);fcntl.ioctl(fd,0x4600,v,True)
+    width,height,xvirt,yvirt,xoff,yoff,bpp=struct.unpack_from('7I',v)
+    if bpp!=32 or xoff or yoff: raise RuntimeError('Unsupported framebuffer layout')
+    stride=int(Path('/sys/class/graphics/fb0/stride').read_text())
+    channels=[struct.unpack_from('III',v,n) for n in (32,44,56)]
+    if any(length!=8 or rev for off,length,rev in channels):
+        raise RuntimeError('Unsupported framebuffer pixel format')
+    def color(r,g,b): return struct.pack('I',sum(c<<channels[i][0] for i,c in enumerate((r,g,b))))
+    fb=mmap.mmap(fd,stride*yvirt,mmap.MAP_SHARED,mmap.PROT_WRITE|mmap.PROT_READ)
+    def rect(x,y,w,h,c):
+        x=max(0,x);y=max(0,y);w=min(w,width-x);h=min(h,height-y)
+        row=c*w
+        for yy in range(y,y+h):fb[yy*stride+x*4:yy*stride+(x+w)*4]=row
+    def draw(percent):
+        bg=color(12,18,24);fg=color(225,235,240);green=color(70,210,140)
+        rect(0,0,width,height,bg)
+        bw=width//2;bh=height//7;x=(width-bw)//2;y=height//3
+        border=max(8,width//150)
+        rect(x,y,bw,bh,fg);rect(x+border,y+border,bw-border*2,bh-border*2,bg)
+        rect(x+bw,y+bh//3,border*2,bh//3,fg)
+        rect(x+border*2,y+border*2,(bw-border*4)*percent//100,bh-border*4,green)
+        text=str(percent)+'%';scale=max(8,width//70);tw=(4*len(text)-1)*scale
+        tx=(width-tw)//2;ty=y+bh+scale*3
+        for i,ch in enumerate(text):
+            for row,bits in enumerate(FONT[ch]):
+                for col,bit in enumerate(bits):
+                    if bit=='1':rect(tx+(i*4+col)*scale,ty+row*scale,scale,scale,fg)
+    return fd,fb,draw
+
+def main():
+    RUN.mkdir(exist_ok=True)
+    backlights=list(Path('/sys/class/backlight').glob('*/brightness'))
+    oldlights={p:p.read_text() for p in backlights}
+    radios={p:p.read_text() for p in Path('/sys/class/rfkill').glob('rfkill*/soft')}
+    fds=[];frame=None;console_fd=None;console_mode=None;fb_identity=None
+    def stop(signum, context):raise SystemExit(0)
+    signal.signal(signal.SIGTERM,stop)
+    signal.signal(signal.SIGINT,stop)
+    try:
+        for p in radios:p.write_text('1')
+        subprocess.run(['chvt','1'],check=False)
+        # Own the VT while drawing, so kernel/fbcon output cannot overwrite it.
+        console_fd=os.open('/dev/tty1',os.O_RDWR|os.O_NOCTTY)
+        mode=array.array('I',[0]);fcntl.ioctl(console_fd,0x4b3b,mode,True)
+        console_mode=mode[0];fcntl.ioctl(console_fd,0x4b3a,1)
+        for p in backlights:p.write_text(str(max(1,int((p.parent/'max_brightness').read_text())//16)))
+        for path in Path('/sys/class/input').glob('event*/device/name'):
+            if path.read_text().strip()=='pmic_pwrkey':
+                fds.append(os.open('/dev/input/'+path.parents[1].name,os.O_RDONLY|os.O_NONBLOCK))
+        if not fds:raise RuntimeError('Power key unavailable')
+        # Reopen when DRM replaces the boot framebuffer after early startup.
+        pressed=None;unplugged=None;last=None;started=time.monotonic()
+        show_until=started+20;screen_on=True;action=None
+        event=struct.Struct('llHHI')
+        print('Charging mode on slot B; hold Power for two seconds to start Linux.',flush=True)
+        while True:
+            now=time.monotonic();supply=online()
+            for p in Path('/sys/class/rfkill').glob('rfkill*/soft'):
+                if p not in radios:
+                    radios[p]=p.read_text();p.write_text('1')
+            try:
+                identity=(str(Path('/sys/class/graphics/fb0').resolve()),os.stat('/dev/fb0').st_ino)
+                if identity!=fb_identity:
+                    if frame:frame[1].close();os.close(frame[0]);frame=None
+                    frame=open_framebuffer();fb_identity=identity;last=None
+            except (OSError,RuntimeError):pass
+            if supply is False and now-started>10:
+                if unplugged is None:unplugged=now
+                if now-unplugged>=5:
+                    action='poweroff';break
+            else:unplugged=None
+            try:percent=max(0,min(100,int((BAT/'capacity').read_text())))
+            except (OSError,ValueError):percent=None
+            if percent is not None and percent!=last:
+                if frame:frame[2](percent)
+                print(f'Charging: {percent}%',flush=True);last=percent
+            readable,_,_=select.select(fds,[],[],0.25)
+            for fd in readable:
+                for offset in range(0,len(data:=os.read(fd,event.size*64)),event.size):
+                    if offset+event.size>len(data):break
+                    _,_,kind,code,value=event.unpack_from(data,offset)
+                    if kind==1 and code==116:
+                        if value==1:
+                            pressed=time.monotonic();show_until=pressed+20;last=None
+                        elif value==0:pressed=None
+            wanted_screen=time.monotonic()<show_until
+            if wanted_screen!=screen_on:
+                for p in backlights:p.write_text(str(max(1,int((p.parent/'max_brightness').read_text())//16) if wanted_screen else 0))
+                screen_on=wanted_screen
+            if pressed is not None and time.monotonic()-pressed>=2:
+                action='desktop';break
+    finally:
+        for p,value in radios.items():
+            try:p.write_text(value)
+            except OSError:pass
+        for p,value in oldlights.items():
+            try:p.write_text(value)
+            except OSError:pass
+        for fd in fds:os.close(fd)
+        if frame:frame[1].close();os.close(frame[0])
+        if console_fd is not None:
+            if console_mode is not None:fcntl.ioctl(console_fd,0x4b3a,console_mode)
+            os.close(console_fd)
+    if action=='desktop':desktop()
+    elif action=='poweroff':subprocess.run(['systemctl','--no-block','poweroff'],check=True)
+
+if __name__=='__main__':
+    try:main()
+    except Exception as error:
+        print('Charging mode failed; starting desktop:',error,flush=True)
+        desktop()

@@ -1,0 +1,13 @@
+[Unit]
+Description=Apply Android Bluetooth identity on TB322FC
+Before=bluetooth.service
+After=systemd-modules-load.service
+ConditionKernelVersion=7.2.8-y700-r2-androidcrypt1
+ConditionPathExists=/usr/lib/modules/7.2.8-y700-r2-androidcrypt1/extra/bt_android_identity.ko
+
+[Service]
+EnvironmentFile=/etc/tb322fc/bluetooth-identity.conf
+Type=oneshot
+ExecStart=/usr/local/sbin/tb322fc-bluetooth-identity
+RemainAfterExit=yes
+TimeoutStartSec=210

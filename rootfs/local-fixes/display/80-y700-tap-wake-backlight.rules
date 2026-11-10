@@ -1,0 +1,2 @@
+# The desktop helper may change only this panel's backlight brightness.
+ACTION=="add", SUBSYSTEM=="backlight", KERNEL=="aw99706-backlight", RUN+="/usr/bin/chgrp video /sys%p/brightness", RUN+="/usr/bin/chmod g+w /sys%p/brightness"

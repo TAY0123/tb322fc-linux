@@ -1,0 +1,110 @@
+diff --git a/arch/arm64/boot/dts/qcom/sm8750-lenovo-elden.dts b/arch/arm64/boot/dts/qcom/sm8750-lenovo-elden.dts
+index deabcb650..4267833f3 100644
+--- a/arch/arm64/boot/dts/qcom/sm8750-lenovo-elden.dts
++++ b/arch/arm64/boot/dts/qcom/sm8750-lenovo-elden.dts
+@@ -1987,10 +1987,102 @@ compute-cb@8 {
+ };
+ 
+ &remoteproc_cdsp {
+-	firmware-name = "qcom/sm8750/LENOVO/elden/cdsp.mbn",
+-			"qcom/sm8750/LENOVO/elden/cdsp_dtb.mbn";
++	firmware-name = "qcom/sm8750/cdsp.mdt",
++			"qcom/sm8750/cdsp_dtb.mdt";
+ 
+-	status = "disabled";
++	status = "okay";
++
++	glink-edge {
++		fastrpc {
++			/* Exact SIDs preserve the firmware mappings on SM8750. */
++			compute-cb@1 {
++				iommus = <&apps_smmu 0x19c1 0>,
++					 <&apps_smmu 0x0c21 0>,
++					 <&apps_smmu 0x0c01 0>,
++					 <&apps_smmu 0x0c41 0>;
++			};
++
++			compute-cb@2 {
++				iommus = <&apps_smmu 0x1962 0>,
++					 <&apps_smmu 0x0c02 0>,
++					 <&apps_smmu 0x0c22 0>,
++					 <&apps_smmu 0x0c42 0>,
++					 <&apps_smmu 0x19c2 0>;
++			};
++
++			compute-cb@3 {
++				iommus = <&apps_smmu 0x1963 0>,
++					 <&apps_smmu 0x0c23 0>,
++					 <&apps_smmu 0x0c03 0>,
++					 <&apps_smmu 0x0c43 0>,
++					 <&apps_smmu 0x19c3 0>;
++			};
++
++			compute-cb@4 {
++				iommus = <&apps_smmu 0x1964 0>,
++					 <&apps_smmu 0x0c24 0>,
++					 <&apps_smmu 0x0c04 0>,
++					 <&apps_smmu 0x0c44 0>,
++					 <&apps_smmu 0x19c4 0>;
++			};
++
++			compute-cb@5 {
++				iommus = <&apps_smmu 0x1965 0>,
++					 <&apps_smmu 0x0c25 0>,
++					 <&apps_smmu 0x0c05 0>,
++					 <&apps_smmu 0x0c45 0>,
++					 <&apps_smmu 0x19c5 0>;
++			};
++
++			compute-cb@6 {
++				iommus = <&apps_smmu 0x1966 0>,
++					 <&apps_smmu 0x0c06 0>,
++					 <&apps_smmu 0x0c26 0>,
++					 <&apps_smmu 0x0c46 0>,
++					 <&apps_smmu 0x19c6 0>;
++			};
++
++			compute-cb@7 {
++				iommus = <&apps_smmu 0x1967 0>,
++					 <&apps_smmu 0x0c27 0>,
++					 <&apps_smmu 0x0c07 0>,
++					 <&apps_smmu 0x0c47 0>,
++					 <&apps_smmu 0x19c7 0>;
++			};
++
++			compute-cb@8 {
++				iommus = <&apps_smmu 0x1968 0>,
++					 <&apps_smmu 0x0c08 0>,
++					 <&apps_smmu 0x0c28 0>,
++					 <&apps_smmu 0x0c48 0>,
++					 <&apps_smmu 0x19c8 0>;
++			};
++
++			compute-cb@12 {
++				iommus = <&apps_smmu 0x196c 0>,
++					 <&apps_smmu 0x0c0c 0>,
++					 <&apps_smmu 0x0c2c 0>,
++					 <&apps_smmu 0x0c4c 0>,
++					 <&apps_smmu 0x19cc 0>;
++			};
++
++			compute-cb@13 {
++				iommus = <&apps_smmu 0x196d 0>,
++					 <&apps_smmu 0x0c0d 0>,
++					 <&apps_smmu 0x0c2d 0>,
++					 <&apps_smmu 0x0c2e 0>,
++					 <&apps_smmu 0x0c4d 0>,
++					 <&apps_smmu 0x19cd 0>;
++			};
++
++			compute-cb@14 {
++				iommus = <&apps_smmu 0x196e 0>,
++					 <&apps_smmu 0x0c0e 0>,
++					 <&apps_smmu 0x0c2e 0>,
++					 <&apps_smmu 0x19ce 0>;
++			};
++		};
++	};
+ };
+ 
+ &spi4 {

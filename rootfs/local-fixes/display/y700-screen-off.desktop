@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Screen Off (Tap to Wake)
+Comment=Blank the tablet display; tap once to turn it back on
+Exec=/usr/local/bin/y700-screen-off
+Icon=video-display
+Terminal=false
+Categories=Utility;
+Keywords=screen;display;off;tap;wake;

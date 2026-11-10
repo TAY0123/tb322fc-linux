@@ -1,0 +1,20 @@
+[Unit]
+Description=Restore tablet radios after interrupted sleep preparation
+After=NetworkManager.service bluetooth.service systemd-rfkill.service
+Before=tb322fc-sleep-power.service
+ConditionPathExists=/var/lib/tb322fc-sleep-power/pending.json
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/libexec/tb322fc-sleep-power restore
+TimeoutStartSec=240
+StateDirectory=tb322fc-sleep-power
+StateDirectoryMode=0700
+UMask=0077
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectHome=yes
+ProtectSystem=strict
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,402 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+"""Confirm the installed Linux image before marking Qualcomm slot B successful."""
+
+import argparse
+import array
+from contextlib import contextmanager
+import fcntl
+import hashlib
+import json
+import os
+from pathlib import Path
+import platform
+import re
+import signal
+import stat
+import struct
+import subprocess
+import sys
+import time
+import zlib
+
+
+QBOOTCTL_COMMIT = "39a6e6daaf029fb0a083777679a15ea2c18f72de"
+PARTITIONS = (
+    "abl", "aop", "apdp", "cmnlib", "cmnlib64", "devcfg", "dtbo",
+    "hyp", "keymaster", "msadp", "qupfw", "storsec", "tz", "vbmeta",
+    "vbmeta_system", "boot", "system", "vendor", "modem", "system_ext", "product",
+)
+ACTIVE = 1 << 50
+SUCCESSFUL = 1 << 54
+UNBOOTABLE = 1 << 55
+CONFIG = Path("/etc/tb322fc/boot-success.json")
+STATE = Path("/var/lib/tb322fc-boot-success")
+BY_LABEL = Path("/dev/disk/by-partlabel")
+MAX_IMAGE = 256 * 1024 * 1024
+
+
+def require(condition, message):
+    if not condition:
+        raise RuntimeError(message)
+
+
+def digest(data):
+    return hashlib.sha256(data).hexdigest()
+
+
+def note_at(data, offset):
+    require(offset + 12 <= len(data), "Truncated note header")
+    namesz, descsz, kind = struct.unpack_from("<III", data, offset)
+    name_start = offset + 12
+    desc_start = name_start + ((namesz + 3) & ~3)
+    end = desc_start + ((descsz + 3) & ~3)
+    require(end <= len(data), "Truncated note payload")
+    return data[name_start:name_start + namesz], kind, data[desc_start:desc_start + descsz], end
+
+
+def image_notes(boot):
+    # This project's boot images use header v4 and an uncompressed ARM64 Image.
+    require(len(boot) >= 4096 and boot[:8] == b"ANDROID!", "Invalid Android boot image")
+    kernel_size = struct.unpack_from("<I", boot, 8)[0]
+    header_size = struct.unpack_from("<I", boot, 20)[0]
+    version = struct.unpack_from("<I", boot, 40)[0]
+    require(version == 4 and header_size == 1584, "Expected Android boot header v4")
+    kernel = boot[4096:4096 + kernel_size]
+    require(len(kernel) == kernel_size and kernel_size >= 64, "Truncated kernel Image")
+    require(kernel[56:60] == b"ARM\x64", "Expected an uncompressed ARM64 Image")
+    image_size = struct.unpack_from("<Q", kernel, 16)[0]
+    # image_size includes BSS and can exceed the on-disk payload length.
+    require(64 <= image_size <= MAX_IMAGE, "Invalid ARM64 Image memory size")
+    chains = set()
+    for match in re.finditer(b"Linux\x00", kernel):
+        offset = match.start() - 12
+        if offset < 0 or offset % 4:
+            continue
+        try:
+            name, kind, desc, end = note_at(kernel, offset)
+            if name != b"Linux\0" or kind != 0x100 or desc != b"\0":
+                continue
+            name, kind, desc, end = note_at(kernel, end)
+            if name != b"Linux\0" or kind != 0x101 or len(desc) != 4:
+                continue
+            name, kind, desc, end = note_at(kernel, end)
+            if name == b"GNU\0" and kind == 3 and 4 <= len(desc) <= 64:
+                chains.add(kernel[offset:end])
+        except RuntimeError:
+            continue
+    # Embedded vDSOs also have GNU build-IDs; never identify the kernel by
+    # searching for an arbitrary GNU note. These ARM64 Linux ABI notes bound
+    # the main-kernel notes chain, which must match runtime notes in full.
+    require(len(chains) == 1, "Expected one main-kernel Linux/GNU notes chain")
+    return chains.pop()
+
+
+def runtime_build_id(notes):
+    offset = 0
+    ids = set()
+    while offset + 12 <= len(notes):
+        name, kind, desc, offset = note_at(notes, offset)
+        if name == b"GNU\0" and kind == 3:
+            require(4 <= len(desc) <= 64, "Invalid runtime kernel build-ID")
+            ids.add(desc.hex())
+    require(offset == len(notes) and len(ids) == 1, "Expected one runtime GNU build-ID")
+    return ids.pop()
+
+
+def attestation(boot):
+    require(0 < len(boot) <= MAX_IMAGE, "Boot image exceeds supported size")
+    notes = image_notes(boot)
+    return {
+        "qbootctl_commit": QBOOTCTL_COMMIT,
+        "image_bytes": len(boot),
+        "image_sha256": digest(boot),
+        "kernel_build_id": runtime_build_id(notes),
+        "kernel_notes_sha256": digest(notes),
+    }
+
+
+def verify_image(config, boot, notes):
+    require(attestation(boot) == config, "Installed boot B image does not match attestation")
+    require(runtime_build_id(notes) == config["kernel_build_id"] and digest(notes) == config["kernel_notes_sha256"], "Running kernel does not match installed boot B kernel notes")
+
+
+def boot_suffixes():
+    values = set()
+    for path in (Path("/proc/cmdline"), Path("/proc/bootconfig"),
+                 Path("/proc/device-tree/chosen/bootargs")):
+        if path.exists():
+            text = path.read_text(errors="replace").replace("\0", " ")
+            values.update(re.findall(r'(?:^|\s)(?:androidboot\.)?slot_suffix\s*=\s*[\"\']?(_[ab])(?:[\"\']|\s|$)', text))
+    path = Path("/proc/device-tree/firmware/android/slot_suffix")
+    if path.exists():
+        values.add(path.read_text().strip("\0\n "))
+    return values
+
+
+def verify_linux():
+    require(os.geteuid() == 0, "Run as root")
+    require(platform.system() == "Linux" and platform.machine() == "aarch64", "Expected AArch64 Linux")
+    compatible = Path("/proc/device-tree/compatible").read_bytes().split(b"\0")
+    require(b"lenovo,elden" in compatible, "Expected Lenovo TB322FC hardware")
+    release = Path("/etc/os-release").read_text()
+    require(re.search(r'^ID=[\"\']?(?:arch|archarm)[\"\']?$', release, re.M), "Expected the Linux Arch rootfs")
+    suffixes = boot_suffixes()
+    require(not suffixes or suffixes == {"_b"}, "Bootloader slot evidence is not exclusively B")
+
+
+def read_at(fd, offset, length):
+    data = os.pread(fd, length, offset)
+    require(len(data) == length, "Short block-device read")
+    return data
+
+
+def read_gpt(path):
+    with path.open("rb", buffering=0) as device:
+        sector = array.array("I", [0])
+        size = array.array("Q", [0])
+        read_only = array.array("I", [0])
+        fcntl.ioctl(device, 0x1268, sector, True)  # BLKSSZGET
+        fcntl.ioctl(device, 0x80081272, size, True)  # BLKGETSIZE64
+        fcntl.ioctl(device, 0x125e, read_only, True)  # BLKROGET
+        bs, length = sector[0], size[0]
+        require(bs in (512, 4096) and length % bs == 0, "Unsupported disk geometry")
+        fd = device.fileno()
+        regions = {"mbr": (0, read_at(fd, 0, bs))}
+        for name, lba in (("primary", 1), ("secondary", length // bs - 1)):
+            header = read_at(fd, lba * bs, bs)
+            require(header[:8] == b"EFI PART", "Invalid GPT signature")
+            hs, crc = struct.unpack_from("<II", header, 12)
+            require(92 <= hs <= bs, "Invalid GPT header length")
+            clean = bytearray(header[:hs])
+            clean[16:20] = bytes(4)
+            require(zlib.crc32(clean) == crc, "Invalid GPT header CRC")
+            current, alternate = struct.unpack_from("<QQ", header, 24)
+            require(current == lba and alternate == (length // bs - 1 if lba == 1 else 1), "Invalid GPT mirror locations")
+            first, last = struct.unpack_from("<QQ", header, 40)
+            require(2 <= first <= last < length // bs - 1, "Invalid GPT usable range")
+            table_lba, count, entry_size, table_crc = struct.unpack_from("<QIII", header, 72)
+            require(entry_size == 128 and 0 < count <= 8192, "Unsupported GPT partition array")
+            table_size = count * entry_size
+            table_length = ((table_size + bs - 1) // bs) * bs
+            table_offset = table_lba * bs
+            require(bs * 2 <= table_offset and table_offset + table_length <= length - bs, "GPT table outside disk")
+            table_end = table_lba + table_length // bs
+            require(table_end <= first if name == "primary" else table_lba > last, "GPT array overlaps usable partitions")
+            table = read_at(fd, table_offset, table_length)
+            require(zlib.crc32(table[:table_size]) == table_crc, "Invalid GPT partition-array CRC")
+            regions[f"{name}-header"] = (lba * bs, header)
+            regions[f"{name}-table"] = (table_offset, table)
+        require(regions["primary-table"][1] == regions["secondary-table"][1], "GPT mirrors disagree")
+        require(regions["primary-header"][1][40:72] == regions["secondary-header"][1][40:72], "GPT mirror identity or usable ranges disagree")
+        entries = {}
+        table = regions["primary-table"][1]
+        count = struct.unpack_from("<I", regions["primary-header"][1], 80)[0]
+        for index in range(count):
+            offset = index * 128
+            entry = table[offset:offset + 128]
+            if entry[:16] == bytes(16):
+                continue
+            start, end = struct.unpack_from("<QQ", entry, 32)
+            require(first <= start <= end <= last, "Partition outside GPT usable range")
+            label = entry[56:128].decode("utf-16le").split("\0", 1)[0]
+            require(label not in entries, "Duplicate GPT partition name")
+            entries[label] = (offset, struct.unpack_from("<Q", entry, 48)[0])
+        return {"device": str(path), "sector_bytes": bs, "disk_bytes": length, "read_only": read_only[0],
+                "regions": regions, "entries": entries}
+
+
+def partition_disk(path):
+    target = path.resolve(strict=True)
+    require(stat.S_ISBLK(target.stat().st_mode), "Partition is not a block device")
+    sysfs = Path("/sys/class/block") / target.name
+    require((sysfs / "partition").exists(), "Expected a partition device")
+    parent = sysfs.resolve().parent.name
+    require(re.fullmatch(r"[a-zA-Z0-9_-]+", parent), "Invalid parent disk name")
+    return Path("/dev") / parent
+
+
+def snapshots():
+    targets = {}
+    disks = set()
+    for name in PARTITIONS:
+        a, b = BY_LABEL / f"{name}_a", BY_LABEL / f"{name}_b"
+        if a.exists() and b.exists():
+            disks.add(partition_disk(a))
+            disk = partition_disk(b)
+            disks.add(disk)
+            targets.setdefault(str(disk), set()).add(b.name)
+    require(any("boot_b" in names for names in targets.values()), "Missing boot A/B partition pair")
+    data = {str(path): read_gpt(path) for path in sorted(disks)}
+    for disk, labels in targets.items():
+        require(labels <= data[disk]["entries"].keys(), "Partition symlinks disagree with GPT")
+    a = data[str(partition_disk(BY_LABEL / "boot_a"))]["entries"]["boot_a"][1]
+    b = data[str(partition_disk(BY_LABEL / "boot_b"))]["entries"]["boot_b"][1]
+    require(b & ACTIVE and not a & ACTIVE, "Expected exclusively active boot slot B")
+    require(not b & UNBOOTABLE, "Refusing qbootctl unbootable-slot repair path")
+    return data, targets, bool(b & SUCCESSFUL)
+
+
+def expected_table(table, entries, targets):
+    expected = bytearray(table)
+    for label in targets:
+        offset, attributes = entries[label]
+        struct.pack_into("<Q", expected, offset + 48, attributes | SUCCESSFUL)
+    return bytes(expected)
+
+
+def verify_change(before, after, targets):
+    require(before.keys() == after.keys(), "Disk set changed")
+    for disk, previous in before.items():
+        current = after[disk]
+        require(previous["sector_bytes"] == current["sector_bytes"] and previous["disk_bytes"] == current["disk_bytes"], "Disk geometry changed")
+        expected = expected_table(previous["regions"]["primary-table"][1], previous["entries"], targets.get(disk, ()))
+        for name, (offset, data) in previous["regions"].items():
+            new_offset, new_data = current["regions"][name]
+            require(offset == new_offset, "GPT region moved")
+            if name.endswith("-table"):
+                require(new_data == expected, "Unexpected GPT change, including outside B successful bits")
+            elif name.endswith("-header"):
+                old, new = bytearray(data), bytearray(new_data)
+                old[16:20] = new[16:20] = bytes(4)
+                old[88:92] = new[88:92] = bytes(4)
+                require(old == new, "Unexpected GPT header change")
+            else:
+                require(data == new_data, "Protective MBR changed")
+
+
+def save_backup(data, config):
+    directory = STATE / f"{time.time_ns()}-{os.getpid()}"
+    directory.mkdir(mode=0o700, parents=True)
+    manifest = {"attestation": config, "disks": {}}
+    for disk, snapshot in data.items():
+        regions = {}
+        for name, (offset, payload) in snapshot["regions"].items():
+            filename = f"{Path(disk).name}-{name}.bin"
+            with (directory / filename).open("xb") as backup:
+                backup.write(payload)
+                backup.flush()
+                os.fsync(backup.fileno())
+            regions[name] = {"file": filename, "offset": offset, "bytes": len(payload), "sha256": digest(payload)}
+        inventory = {label: {"entry_offset": offset, "attributes": hex(attributes)}
+                     for label, (offset, attributes) in snapshot["entries"].items()}
+        manifest["disks"][disk] = {"sector_bytes": snapshot["sector_bytes"], "disk_bytes": snapshot["disk_bytes"], "read_only": snapshot["read_only"], "regions": regions, "partitions": inventory}
+    with (directory / "manifest.json").open("x") as output:
+        json.dump(manifest, output, indent=2)
+        output.write("\n")
+        output.flush()
+        os.fsync(output.fileno())
+    for path in (directory, directory.parent):
+        fd = os.open(path, os.O_RDONLY | os.O_DIRECTORY)
+        try:
+            os.fsync(fd)
+        finally:
+            os.close(fd)
+    return directory
+
+
+def interrupted(signum, _frame):
+    raise RuntimeError(f"Interrupted by signal {signum}")
+
+
+@contextmanager
+def writable_disks(snapshots_to_write):
+    devices = []
+    try:
+        for disk, snapshot in snapshots_to_write.items():
+            device = Path(disk).open("rb", buffering=0)
+            devices.append((device, snapshot["read_only"]))
+            current = array.array("I", [0])
+            fcntl.ioctl(device, 0x125e, current, True)
+            require(current[0] == snapshot["read_only"], "Disk read-only state changed before marking")
+            if current[0]:
+                fcntl.ioctl(device, 0x125d, array.array("I", [0]), True)  # BLKROSET
+                fcntl.ioctl(device, 0x125e, current, True)
+                require(current[0] == 0, "Could not temporarily lift disk read-only flag")
+        yield
+    finally:
+        previous_mask = signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGTERM, signal.SIGINT})
+        errors = []
+        try:
+            for device, original in reversed(devices):
+                try:
+                    fcntl.ioctl(device, 0x125d, array.array("I", [original]), True)
+                    current = array.array("I", [0])
+                    fcntl.ioctl(device, 0x125e, current, True)
+                    require(current[0] == original, "Disk read-only restoration failed")
+                except (OSError, RuntimeError) as error:
+                    errors.append(str(error))
+                finally:
+                    device.close()
+        finally:
+            signal.pthread_sigmask(signal.SIG_SETMASK, previous_mask)
+        require(not errors, "Failed to restore disk read-only flags: " + "; ".join(errors))
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--attest-image", type=Path, help="print opt-in configuration for a verified boot image; no device access")
+    parser.add_argument("--check", action="store_true", help="verify Linux, installed image and GPT without writing metadata")
+    args = parser.parse_args()
+    if args.attest_image:
+        json.dump(attestation(args.attest_image.read_bytes()), sys.stdout, indent=2)
+        print()
+        return
+    verify_linux()
+    info = CONFIG.lstat()
+    require(stat.S_ISREG(info.st_mode) and info.st_uid == 0 and not info.st_mode & 0o022, "Unsafe attestation configuration ownership or permissions")
+    config = json.loads(CONFIG.read_text())
+    require(config.get("qbootctl_commit") == QBOOTCTL_COMMIT, "Unrecognized qbootctl attestation version")
+    image_bytes = config.get("image_bytes")
+    require(type(image_bytes) is int and 0 < image_bytes <= MAX_IMAGE, "Invalid attested image length")
+    with (BY_LABEL / "boot_b").open("rb", buffering=0) as partition:
+        boot = read_at(partition.fileno(), 0, image_bytes)
+    notes = Path("/sys/kernel/notes").read_bytes()
+    verify_image(config, boot, notes)
+    STATE.mkdir(mode=0o700, parents=True, exist_ok=True)
+    lock_path = STATE / "boot-success.lock"
+    with lock_path.open("a") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        before, targets, successful = snapshots()
+        print("Verified Arch Linux kernel matches attested boot B; GPT has active B and inactive A.", flush=True)
+        if successful:
+            print("Slot B is already successful; no metadata write needed.")
+            return
+        if args.check:
+            print("Check only: slot B would be marked successful.")
+            return
+        tool = next((path for path in (Path("/usr/local/bin/qbootctl"), Path("/usr/bin/qbootctl")) if path.is_file() and os.access(path, os.X_OK)), None)
+        require(tool is not None, "Pinned qbootctl is not installed")
+        backup = save_backup(before, config)
+        print(f"GPT backup saved to {backup}", flush=True)
+        unchanged, current_targets, _ = snapshots()
+        require(current_targets == targets, "Partition set changed before marking")
+        require(all(before[disk]["regions"] == unchanged[disk]["regions"] for disk in before), "GPT changed before marking")
+        result = None
+        command_error = None
+        with writable_disks({disk: before[disk] for disk in targets}):
+            try:
+                result = subprocess.run([str(tool), "-m", "b"], text=True, capture_output=True, timeout=60)
+            except (OSError, RuntimeError, subprocess.TimeoutExpired) as error:
+                command_error = error
+        after, after_targets, marked = snapshots()
+        require(all(before[disk]["read_only"] == after[disk]["read_only"] for disk in before), "Disk read-only flags were not restored")
+        require(after_targets == targets, "Partition set changed after marking")
+        if result:
+            print(result.stdout, end="")
+            print(result.stderr, end="", file=sys.stderr)
+        verify_change(before, after, targets)
+        require(command_error is None, f"qbootctl failed: {command_error}")
+        require(result is not None and result.returncode == 0 and marked, "qbootctl did not mark slot B successful")
+        print("Slot B successful bits verified; Android A entries and remaining partition metadata are unchanged.")
+
+
+if __name__ == "__main__":
+    os.umask(0o077)
+    signal.signal(signal.SIGTERM, interrupted)
+    signal.signal(signal.SIGINT, interrupted)
+    try:
+        main()
+    except (OSError, ValueError, RuntimeError, subprocess.TimeoutExpired) as error:
+        print(f"Boot confirmation failed: {error}", file=sys.stderr)
+        sys.exit(1)

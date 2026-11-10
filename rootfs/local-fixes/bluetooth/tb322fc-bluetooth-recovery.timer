@@ -1,0 +1,11 @@
+[Unit]
+Description=Check for failed TB322FC Bluetooth startup
+
+[Timer]
+OnBootSec=2min
+OnUnitInactiveSec=2min
+AccuracySec=10s
+Unit=tb322fc-bluetooth-recovery.service
+
+[Install]
+WantedBy=timers.target

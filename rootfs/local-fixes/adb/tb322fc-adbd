@@ -1,0 +1,375 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+"""Maintain FunctionFS ADB when the tablet's USB controller changes roles."""
+
+import fcntl
+import os
+import pwd
+from pathlib import Path
+import select
+import signal
+import socket
+import subprocess
+import time
+
+
+GADGET = Path('/sys/kernel/config/usb_gadget/tb322fc')
+FFS = Path('/dev/usb-ffs/adb')
+UDCS = Path('/sys/class/udc')
+
+
+def log(message):
+    print(message, flush=True)
+
+
+def stop_daemon(process):
+    try:
+        os.killpg(process.pid, signal.SIGTERM)
+    except ProcessLookupError:
+        pass
+    try:
+        process.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        pass
+    # The leader can exit before a child that ignored TERM. Always finish the
+    # owned group before dropping its handle or unmounting FunctionFS.
+    try:
+        os.killpg(process.pid, signal.SIGKILL)
+    except ProcessLookupError:
+        pass
+    process.wait(timeout=2)
+
+
+class Gadget:
+    def __init__(self):
+        self.daemon = None
+        account = os.environ.get('ADBD_USER')
+        if not account:
+            raise RuntimeError('Set ADBD_USER in private service configuration')
+        self.account = pwd.getpwnam(account)
+        if self.account.pw_uid == 0:
+            raise RuntimeError('ADBD_USER must be an unprivileged account')
+
+    def binding(self):
+        return (GADGET / 'UDC').read_text().strip()
+
+    def controller(self, preferred=''):
+        # DWC3 registers a UDC only in device role. Do not force a Type-C role
+        # or take a controller used by another configfs gadget.
+        occupied = set()
+        for path in GADGET.parent.glob('*/UDC'):
+            if path.parent != GADGET:
+                try:
+                    occupied.add(path.read_text().strip())
+                except FileNotFoundError:
+                    pass
+        candidates = sorted(UDCS.glob('*'), key=lambda p: (
+            p.name != preferred, 'a600000' not in p.name, p.name))
+        for path in candidates:
+            if path.exists() and path.name not in occupied:
+                try:
+                    function = (path / 'function').read_text().strip()
+                except FileNotFoundError:
+                    continue  # Controller changed role during this inspection.
+                if not function or function == GADGET.name:
+                    return path.name
+        return ''
+
+    def alive(self):
+        return self.daemon is not None and self.daemon.poll() is None
+
+    def host_connected(self):
+        ports = Path('/sys/class/typec')
+        if not any(ports.glob('port[0-9]*')):
+            return True  # Controllers without USB Type-C use UDC state alone.
+        for partner in ports.glob('port*-partner'):
+            try:
+                role = (ports / partner.name.removesuffix('-partner') / 'data_role').read_text().strip()
+            except FileNotFoundError:
+                continue
+            if role == 'device' or '[device]' in role:
+                return True
+        return False
+
+    def state(self, controller):
+        try:
+            return (UDCS / controller / 'state').read_text().strip()
+        except FileNotFoundError:
+            return ''
+
+    def attached(self, controller):
+        # Configfs UDC stores the requested controller name even across removal.
+        # The UDC's function attribute proves the driver is actually bound.
+        try:
+            return (UDCS / controller / 'function').read_text().strip() == GADGET.name
+        except FileNotFoundError:
+            return False
+
+    @staticmethod
+    def run(*args):
+        subprocess.run(args, check=True, timeout=5)
+
+    def reset(self, restore=False):
+        previous = self.binding()
+        if previous:
+            (GADGET / 'UDC').write_text('\n')
+        if self.daemon is not None:
+            # Stop this daemon's process group before unmounting FunctionFS.
+            stop_daemon(self.daemon)
+            self.daemon = None
+        (GADGET / 'configs/c.1/ffs.adb').unlink(missing_ok=True)
+        if subprocess.run(['mountpoint', '-q', str(FFS)]).returncode == 0:
+            self.run('umount', str(FFS))
+        try:
+            (GADGET / 'functions/ffs.adb').rmdir()
+        except FileNotFoundError:
+            pass
+        if restore:
+            controller = self.controller(previous)
+            if controller:
+                (GADGET / 'UDC').write_text(controller + '\n')
+
+    def start(self, controller):
+        self.reset()
+        (GADGET / 'functions/ffs.adb').mkdir(exist_ok=True)
+        FFS.mkdir(parents=True, exist_ok=True)
+        # Allow the unprivileged daemon to reach its private FunctionFS mount.
+        FFS.parent.chmod(0o711)
+        mount_options = (f'uid={self.account.pw_uid},gid={self.account.pw_gid},'
+                         'rmode=0500,fmode=0600')
+        self.run('mount', '-t', 'functionfs', '-o', mount_options, 'adb', str(FFS))
+        (GADGET / 'configs/c.1/ffs.adb').symlink_to(GADGET / 'functions/ffs.adb')
+        environment = os.environ | {
+            'ADBD_PORT': '0', 'ADB_TCP_PORT': '0', 'ADBD_SHELL': '/bin/bash',
+            'TMPDIR': '/var/tmp', 'HOME': self.account.pw_dir,
+            'USER': self.account.pw_name, 'LOGNAME': self.account.pw_name,
+        }
+        self.daemon = subprocess.Popen(
+            ['/usr/local/bin/adbd'], env=environment, start_new_session=True,
+            user=self.account.pw_uid, group=self.account.pw_gid,
+            extra_groups=os.getgrouplist(self.account.pw_name, self.account.pw_gid),
+            cwd=self.account.pw_dir)
+        deadline = time.monotonic() + 10
+        while time.monotonic() < deadline:
+            if not self.alive():
+                raise RuntimeError('adbd exited before preparing USB endpoints')
+            if (FFS / 'ep1').exists() and (FFS / 'ep2').exists():
+                (GADGET / 'UDC').write_text(controller + '\n')
+                return
+            time.sleep(0.1)
+        raise RuntimeError('adbd did not prepare its USB endpoints in ten seconds')
+
+
+class Supervisor:
+    def __init__(self, gadget):
+        self.gadget = gadget
+        self.controller = ''
+        self.retry_at = None
+        self.delay = 1
+        self.waiting = False
+        self.generation = 0
+
+    def reconcile(self, now, resume=False, disconnected=False):
+        candidate = self.gadget.controller(self.controller or self.gadget.binding())
+        if not candidate:
+            if self.controller or self.gadget.alive():
+                try:
+                    self.gadget.reset()
+                except (OSError, subprocess.SubprocessError) as error:
+                    log(f'USB ADB cleanup deferred: {error}')
+                    self.retry_at = now + 5
+                    return
+            self.controller = ''
+            self.retry_at = None
+            if not self.waiting:
+                log('No USB device controller; adbd is stopped, waiting for plug-in.')
+            self.waiting = True
+            return
+        if disconnected or not self.gadget.host_connected():
+            if self.gadget.daemon is not None:
+                try:
+                    self.gadget.reset(restore=True)
+                except (OSError, subprocess.SubprocessError) as error:
+                    log(f'USB ADB cleanup deferred: {error}')
+                    self.retry_at = now + 5
+                    return
+                self.generation += 1
+                log('USB disconnected; adbd stopped.')
+            self.controller = candidate
+            self.retry_at = None
+            self.delay = 1
+            if not self.waiting:
+                log('Waiting for USB host plug-in; adbd is not running.')
+            self.waiting = True
+            return
+        if (not resume and self.controller == candidate and self.gadget.alive()
+                and self.gadget.binding() == candidate and self.gadget.attached(candidate)):
+            self.retry_at = None
+            return
+        if not self.gadget.alive() and self.gadget.state(candidate) not in {'configured', 'suspended'}:
+            # Keep ACM/NCM bound to detect the next host enumeration. ADB's
+            # FunctionFS daemon is launched only after that host connects.
+            if self.gadget.binding() != candidate or not self.gadget.attached(candidate):
+                try:
+                    self.gadget.reset(restore=True)
+                except (OSError, subprocess.SubprocessError) as error:
+                    log(f'USB baseline setup deferred: {error}')
+                    self.retry_at = now + 5
+                    return
+                self.generation += 1
+            self.controller = candidate
+            self.retry_at = None
+            if not self.waiting:
+                log('Waiting for USB host plug-in; adbd is not running.')
+            self.waiting = True
+            return
+        if not resume and self.retry_at is not None and now < self.retry_at:
+            return
+        try:
+            self.gadget.start(candidate)
+        except (OSError, RuntimeError, subprocess.SubprocessError) as error:
+            log(f'USB ADB setup deferred: {error}')
+            try:
+                self.gadget.reset(restore=True)
+            except (OSError, subprocess.SubprocessError) as cleanup_error:
+                log(f'USB ADB cleanup deferred: {cleanup_error}')
+            self.controller = ''
+            self.retry_at = time.monotonic() + self.delay
+            self.delay = min(self.delay * 2, 10)
+            return
+        self.controller = candidate
+        self.generation += 1
+        self.waiting = False
+        self.retry_at = None
+        self.delay = 1
+        log(f'USB ADB enabled on {candidate} as {self.gadget.account.pw_name} '
+            'alongside ACM serial and NCM networking.')
+
+
+class UDCStateWatch:
+    """Watch sysfs notifications, including cable resets that emit no uevent."""
+    def __init__(self, poller):
+        self.poller = poller
+        self.fd = None
+        self.token = None
+        self.configured = False
+
+    def close(self):
+        if self.fd is not None:
+            self.poller.unregister(self.fd)
+            os.close(self.fd)
+        self.fd = None
+        self.token = None
+        self.configured = False
+
+    def state(self):
+        os.lseek(self.fd, 0, os.SEEK_SET)
+        return os.read(self.fd, 256).decode().strip()
+
+    def sync(self, controller, generation):
+        token = (controller, generation)
+        if self.token == token and (self.fd is not None or not controller):
+            return
+        self.close()
+        self.token = token
+        if not controller:
+            return
+        try:
+            self.fd = os.open(UDCS / controller / 'state', os.O_RDONLY | os.O_CLOEXEC)
+            self.poller.register(self.fd, select.POLLPRI | select.POLLERR)
+            # Reading also acknowledges any outstanding sysfs notification.
+            self.configured = self.state() in {'configured', 'suspended'}
+        except OSError:
+            self.close()  # The UDC can disappear while changing USB roles.
+
+    def changed(self):
+        try:
+            state = self.state()
+        except OSError:
+            self.close()
+            return False
+        return self.observe(state)
+
+    def observe(self, state):
+        if state in {'configured', 'suspended'}:
+            self.configured = True
+        elif self.configured:
+            self.configured = False
+            log(f'USB left configured state ({state}); stopping adbd.')
+            return True
+        return False
+
+
+def relevant_event(message):
+    fields = dict(part.split(b'=', 1) for part in message.split(b'\0') if b'=' in part)
+    return fields.get(b'SUBSYSTEM') in {b'udc', b'usb_role', b'typec'}
+
+
+def main():
+    if os.geteuid() != 0:
+        raise SystemExit('adbd gadget setup requires root')
+    if not (GADGET / 'configs/c.1').is_dir():
+        raise SystemExit('The early TB322FC ACM/NCM gadget is unavailable')
+    Path('/run/lock').mkdir(exist_ok=True)
+    with open('/run/lock/tb322fc-adbd.lock', 'w') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        # Subscribe before inspecting sysfs so a returning controller is never
+        # missed between the initial inspection and waiting for its uevent.
+        with socket.socket(socket.AF_NETLINK, socket.SOCK_DGRAM, 15) as events:
+            events.bind((0, 1))  # NETLINK_KOBJECT_UEVENT, kernel multicast group
+            events.setblocking(False)
+            reader, writer = socket.socketpair()
+            with reader, writer:
+                reader.setblocking(False)
+                writer.setblocking(False)
+                old_wakeup = signal.set_wakeup_fd(writer.fileno())
+                flags = {'stop': False, 'resume': False}
+
+                def handle(signum, _frame):
+                    if signum in (signal.SIGTERM, signal.SIGINT):
+                        flags['stop'] = True
+                    elif signum == signal.SIGUSR1:
+                        flags['resume'] = True
+
+                for signum in (signal.SIGTERM, signal.SIGINT, signal.SIGUSR1, signal.SIGCHLD):
+                    signal.signal(signum, handle)
+                supervisor = Supervisor(Gadget())
+                poller = select.poll()
+                poller.register(events.fileno(), select.POLLIN)
+                poller.register(reader.fileno(), select.POLLIN)
+                state_watch = UDCStateWatch(poller)
+                usb_reset = False
+                try:
+                    while not flags['stop']:
+                        resume = flags['resume']
+                        flags['resume'] = False
+                        disconnected = usb_reset
+                        usb_reset = False
+                        supervisor.reconcile(time.monotonic(), resume, disconnected)
+                        # A new FunctionFS generation starts a fresh connection
+                        # history, so our own unbind/rebind cannot cause a loop.
+                        state_watch.sync(supervisor.controller, supervisor.generation)
+                        timeout = None
+                        if supervisor.retry_at is not None:
+                            timeout = max(0, int(
+                                (supervisor.retry_at - time.monotonic()) * 1000)) + 1
+                        if supervisor.controller and state_watch.fd is None:
+                            timeout = 1000 if timeout is None else min(timeout, 1000)
+                        for fd, _ in poller.poll(timeout):
+                            if fd == reader.fileno():
+                                reader.recv(4096)
+                            elif fd == state_watch.fd:
+                                usb_reset = state_watch.changed() or usb_reset
+                            else:
+                                # Ignore forged userspace netlink packets.
+                                packet, sender = events.recvfrom(65536)
+                                if sender[0] != 0 or not relevant_event(packet):
+                                    continue
+                finally:
+                    state_watch.close()
+                    signal.set_wakeup_fd(old_wakeup)
+                    supervisor.gadget.reset(restore=True)
+
+
+if __name__ == '__main__':
+    main()

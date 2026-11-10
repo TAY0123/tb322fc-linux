@@ -1,0 +1,23 @@
+Subject: [EXPERIMENTAL] dt-bindings: soc: qcom,pmic-glink: describe the experimental panel reference
+
+Prepare an opt-in hardware experiment against the installed Y700 kernel.
+Reliable notification suppression during deep suspend remains unverified.
+
+---
+
+diff --git a/Documentation/devicetree/bindings/soc/qcom/qcom,pmic-glink.yaml b/Documentation/devicetree/bindings/soc/qcom/qcom,pmic-glink.yaml
+--- a/Documentation/devicetree/bindings/soc/qcom/qcom,pmic-glink.yaml
++++ b/Documentation/devicetree/bindings/soc/qcom/qcom,pmic-glink.yaml
+@@ -63,6 +63,12 @@
+     description:
+       The firmware reports negative battery current while charging and positive
+       current while discharging, opposite to the power supply interface convention.
++
++  panel:
++    $ref: /schemas/types.yaml#/definitions/phandle
++    description:
++      Display panel whose blanking controls battery notification subscriptions.
++      Used by the experimental SM8750 display-blank notification policy.
+ 
+   orientation-gpios:
+     description: Array of input gpios for the Type-C connector orientation indication.

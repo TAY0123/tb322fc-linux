@@ -2,8 +2,9 @@
 
 This inventory reconciles the earlier Codex patching conversations with `master`
 at `5e7bc50`. It distinguishes source already shipped by this branch from changes
-installed on the tablet and experimental kernels. This documentation commit does
-not import the local helpers, change source pins, or deploy a kernel.
+installed on the tablet and experimental kernels. The initial inventory commit added documentation only. The recovered source is
+now available under [optional local fixes](../rootfs/local-fixes/README.md);
+these helpers and experimental patches are not enabled by package recipes.
 
 ## Kernel and boot changes already on master
 
@@ -51,7 +52,7 @@ for authorship, rejected display changes and the actual device checks.
 These are recorded in the October 15–November 10 conversations and their saved
 verification records. Their installation on one tablet does not mean the branch
 packages include them. Names below identify the deployed helpers for inspection;
-this page is not an installation script.
+the source directory documents manual integration prerequisites.
 
 | Area | Installed behavior | Verification and remaining limits |
 | --- | --- | --- |
@@ -106,5 +107,6 @@ checkpoint and November 6/10 helper validation records. Private transcript text,
 network names, peer identifiers and workspace paths are intentionally omitted.
 
 This inventory was checked against the branch files and the tablet's running
-kernel and sleep selection. It adds documentation only; no new suspend, reboot,
-shutdown, flash or physical interaction test was performed for this commit.
+kernel and sleep selection. Source collection and offline checks do not establish new hardware results;
+no suspend, reboot, shutdown, flash or physical interaction test was performed
+while collecting these files.

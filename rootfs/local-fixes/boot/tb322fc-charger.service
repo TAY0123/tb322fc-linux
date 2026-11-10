@@ -1,0 +1,16 @@
+[Unit]
+Description=Tablet charging display and power-key control
+After=local-fs.target systemd-udev-trigger.service
+Conflicts=getty@tty1.service display-manager.service
+OnFailure=graphical.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/libexec/tb322fc-charger
+Restart=on-failure
+RestartSec=3
+RuntimeDirectory=tb322fc-charger
+RuntimeDirectoryPreserve=yes
+StandardInput=null
+StandardOutput=journal
+StandardError=journal

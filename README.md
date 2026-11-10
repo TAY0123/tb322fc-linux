@@ -13,6 +13,8 @@ for the imported changes, candidate switch and validation status.
 
 See the [system and kernel change inventory](docs/system-kernel-changes-20261110.md)
 for branch additions, later tablet-local fixes and unverified sleep candidates.
+Recovered helper source and legacy kernel deltas are in
+[optional local system fixes](rootfs/local-fixes/README.md).
 
 The device runs Plasma Mobile through SDDM, with ordinary Plasma and Steam
 sessions available. F2FS is supported by the packaged kernel. Historical direct

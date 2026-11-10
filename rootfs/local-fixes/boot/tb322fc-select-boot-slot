@@ -1,0 +1,323 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+"""Select a TB322FC boot slot with GPT backups and restored write protection."""
+
+import argparse
+import array
+import fcntl
+import hashlib
+import importlib.machinery
+import importlib.util
+import json
+import os
+from pathlib import Path
+import signal
+import stat
+import struct
+import subprocess
+import sys
+
+
+# Keep the already reviewed GPT/backup/RO implementation shared with the
+# boot-success service. Both installers put these helpers in the same directory.
+loader = importlib.machinery.SourceFileLoader(
+    "tb322fc_boot_success", str(Path(__file__).with_name("tb322fc-mark-boot-success")))
+spec = importlib.util.spec_from_loader(loader.name, loader)
+boot = importlib.util.module_from_spec(spec)
+loader.exec_module(boot)
+require = boot.require
+MAX_PAYLOAD_BYTES = 2 * 1024 * 1024 * 1024
+BLOCK_SYSFS = Path("/sys/class/block")
+BSG_SYSFS = Path("/sys/class/bsg/ufs-bsg0")
+BSG_DEVICE = Path("/dev/bsg/ufs-bsg0")
+
+
+def snapshot_slots():
+    pairs = {}
+    for name in boot.PARTITIONS:
+        a, b = boot.BY_LABEL / f"{name}_a", boot.BY_LABEL / f"{name}_b"
+        require(a.exists() == b.exists(), f"Incomplete partition pair {name}")
+        if not a.exists():
+            continue
+        disk = boot.partition_disk(a)
+        require(disk == boot.partition_disk(b), f"Partition pair {name} crosses disks")
+        pairs.setdefault(str(disk), []).append(name)
+    names = {name for group in pairs.values() for name in group}
+    require({"boot", "dtbo"} <= names, "Missing required boot/dtbo A/B pairs")
+    disks = set(pairs)
+    disks.update(str(boot.partition_disk(boot.BY_LABEL / f"xbl_{slot}"))
+                 for slot in ("a", "b"))
+    snapshots = {disk: boot.read_gpt(Path(disk)) for disk in sorted(disks)}
+    active = set()
+    for disk, group in pairs.items():
+        for name in group:
+            entries = snapshots[disk]["entries"]
+            require({f"{name}_a", f"{name}_b"} <= entries.keys(), "Partition symlinks disagree with GPT")
+            a, b = (entries[f"{name}_{slot}"][1] for slot in ("a", "b"))
+            require(bool(a & boot.ACTIVE) != bool(b & boot.ACTIVE), f"Ambiguous active pair {name}")
+            active.add("a" if a & boot.ACTIVE else "b")
+    require(len(active) == 1, "Active slot differs between partition pairs")
+    return snapshots, pairs, active.pop()
+
+
+def expected_table(snapshot, pairs, target):
+    original = snapshot["regions"]["primary-table"][1]
+    expected = bytearray(original)
+    for name in pairs:
+        a, b = (snapshot["entries"][f"{name}_{slot}"] for slot in ("a", "b"))
+        active, inactive = (a, b) if a[1] & boot.ACTIVE else (b, a)
+        # Match the pinned qbootctl UPDATE_SLOT macro exactly. It assigns the
+        # current active/inactive type GUIDs to A/B and rewrites only byte 54
+        # (bits 48..55) for the selected slot, clearing the other's active bit.
+        expected[a[0]:a[0] + 16] = original[active[0]:active[0] + 16]
+        expected[b[0]:b[0] + 16] = original[inactive[0]:inactive[0] + 16]
+        for slot, (offset, _) in (("a", a), ("b", b)):
+            expected[offset + 54] = 0x0f if slot == target else original[offset + 54] & ~0x04
+    return bytes(expected)
+
+
+def verify_change(before, after, pairs, target):
+    require(before.keys() == after.keys(), "Disk set changed")
+    for disk, previous in before.items():
+        current = after[disk]
+        require(previous["sector_bytes"] == current["sector_bytes"] and
+                previous["disk_bytes"] == current["disk_bytes"], "Disk geometry changed")
+        expected = expected_table(previous, pairs.get(disk, ()), target)
+        require(previous["regions"].keys() == current["regions"].keys(), "GPT region set changed")
+        for name, (offset, data) in previous["regions"].items():
+            new_offset, new_data = current["regions"][name]
+            require(offset == new_offset, "GPT region moved")
+            if name.endswith("-table"):
+                require(new_data == expected, "Unexpected GPT change outside selected slot metadata")
+            elif name.endswith("-header"):
+                old, new = bytearray(data), bytearray(new_data)
+                old[16:20] = new[16:20] = bytes(4)
+                old[88:92] = new[88:92] = bytes(4)
+                require(old == new, "Unexpected GPT header change")
+            else:
+                require(data == new_data, "Protective MBR changed")
+        require(previous["read_only"] == current["read_only"], "Disk read-only flag was not restored")
+
+
+def ufs_attribute(disks):
+    candidates = set()
+    for disk in disks:
+        path = (BLOCK_SYSFS / Path(disk).name).resolve(strict=True)
+        found = [parent / "attributes/boot_lun_enabled" for parent in path.parents
+                 if (parent / "attributes/boot_lun_enabled").is_file()]
+        require(len(found) == 1, "Cannot identify one UFS controller for a partition disk")
+        candidates.add(found[0])
+    require(len(candidates) == 1, "Partition disks are not on one UFS controller")
+    attribute = candidates.pop()
+    bsg = BSG_SYSFS.resolve(strict=True)
+    require(attribute.parent.parent == bsg or attribute.parent.parent in bsg.parents,
+            "qbootctl UFS BSG controller does not match partition disks")
+    node = BSG_DEVICE.stat()
+    require(stat.S_ISCHR(node.st_mode), "UFS BSG node is not a character device")
+    identity = tuple(int(value) for value in (BSG_SYSFS / "dev").read_text().strip().split(":"))
+    require(identity == (os.major(node.st_rdev), os.minor(node.st_rdev)),
+            "UFS BSG device node does not match sysfs identity")
+    return attribute
+
+
+def read_lun(attribute):
+    value = int(attribute.read_text().strip(), 0)
+    require(value in (1, 2), "Unsupported UFS boot LUN selection")
+    return value
+
+
+def verify_partition_geometry(path, snapshot, size):
+    require(path.name in snapshot["entries"], "Partition symlink label disagrees with GPT")
+    offset = snapshot["entries"][path.name][0]
+    start, end = struct.unpack_from("<QQ", snapshot["regions"]["primary-table"][1], offset + 32)
+    sysfs = BLOCK_SYSFS / path.resolve().name
+    require(int((sysfs / "start").read_text()) * 512 == start * snapshot["sector_bytes"] and
+            int((sysfs / "size").read_text()) * 512 == size and
+            size == (end - start + 1) * snapshot["sector_bytes"],
+            "Partition device geometry disagrees with GPT")
+
+
+def verify_parent_protection(snapshots):
+    for disk, snapshot in snapshots.items():
+        if snapshot["read_only"] == 1:
+            continue
+        require(snapshot["read_only"] == 0, "Unsupported parent write-protection state")
+        rootfs = boot.BY_LABEL / "rootfs"
+        require(disk == str(boot.partition_disk(rootfs)), "Non-rootfs parent disk must already be read-only")
+        require(os.stat("/").st_dev == rootfs.stat().st_rdev,
+                "Writable parent is not the mounted rootfs device")
+        with rootfs.open("rb", buffering=0) as device:
+            size = array.array("Q", [0])
+            fcntl.ioctl(device, 0x80081272, size, True)
+        verify_partition_geometry(rootfs, snapshot, size[0])
+
+
+def payload_inventory(pairs):
+    paths = {boot.BY_LABEL / f"{name}_{slot}" for group in pairs.values()
+             for name in group for slot in ("a", "b")}
+    paths.update(boot.BY_LABEL / f"xbl_{slot}" for slot in ("a", "b"))
+    inventory = {}
+    total = 0
+    for path in sorted(paths):
+        disk = boot.partition_disk(path)
+        snapshot = boot.read_gpt(disk)
+        with path.open("rb", buffering=0) as device:
+            size, read_only = array.array("Q", [0]), array.array("I", [0])
+            fcntl.ioctl(device, 0x80081272, size, True)
+            fcntl.ioctl(device, 0x125e, read_only, True)
+        verify_partition_geometry(path, snapshot, size[0])
+        total += size[0]
+        require(0 < size[0] and total <= MAX_PAYLOAD_BYTES, "Payload verification exceeds the 2 GiB bound")
+        require(read_only[0] == 1, f"Boot partition {path.name} must remain read-only")
+        inventory[path.name] = {"path": str(path.resolve()), "disk": str(disk),
+                                "bytes": size[0], "read_only": read_only[0]}
+    return inventory
+
+
+def hash_payloads(inventory):
+    values = {}
+    for label, item in inventory.items():
+        value = hashlib.sha256()
+        remaining = item["bytes"]
+        with Path(item["path"]).open("rb", buffering=0) as payload:
+            while remaining:
+                data = payload.read(min(1024 * 1024, remaining))
+                require(data, "Short boot-partition payload read")
+                value.update(data)
+                remaining -= len(data)
+        values[label] = value.hexdigest()
+    return values
+
+
+def verify_installed_linux():
+    boot.verify_linux()
+    info = boot.CONFIG.lstat()
+    require(stat.S_ISREG(info.st_mode) and info.st_uid == 0 and not info.st_mode & 0o022,
+            "Unsafe boot-B attestation configuration")
+    config = json.loads(boot.CONFIG.read_text())
+    require(config.get("qbootctl_commit") == boot.QBOOTCTL_COMMIT, "Unrecognized qbootctl pin")
+    length = config.get("image_bytes")
+    require(type(length) is int and 0 < length <= boot.MAX_IMAGE, "Invalid boot-B attested length")
+    with (boot.BY_LABEL / "boot_b").open("rb", buffering=0) as partition:
+        image = boot.read_at(partition.fileno(), 0, length)
+    boot.verify_image(config, image, Path("/sys/kernel/notes").read_bytes())
+    return config
+
+
+def save_result(directory, data, filename="selection-result.json"):
+    with (directory / filename).open("x") as output:
+        json.dump(data, output, indent=2)
+        output.write("\n")
+        output.flush()
+        os.fsync(output.fileno())
+    fd = os.open(directory, os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+
+
+def select(target, dry_run=False):
+    require(target in (None, "a", "b"), "Only slots A and B are supported")
+    config = verify_installed_linux()
+    boot.STATE.mkdir(mode=0o700, parents=True, exist_ok=True)
+    with (boot.STATE / "boot-success.lock").open("a") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        before, pairs, active = snapshot_slots()
+        verify_parent_protection(before)
+        inventory = payload_inventory(pairs)
+        controller_disks = set(before) | {item["disk"] for item in inventory.values()}
+        attribute = ufs_attribute(controller_disks)
+        old_lun = read_lun(attribute)
+        require(old_lun == (1 if active == "a" else 2), "Active GPT slot and UFS boot LUN disagree")
+        if target is None:
+            print(f"Active slot: {active.upper()}; UFS boot LUN: {old_lun}")
+            for slot in ("a", "b"):
+                disk = str(boot.partition_disk(boot.BY_LABEL / f"boot_{slot}"))
+                attributes = before[disk]["entries"][f"boot_{slot}"][1]
+                print(f"Slot {slot.upper()}: successful={int(bool(attributes & boot.SUCCESSFUL))}, "
+                      f"bootable={int(not attributes & boot.UNBOOTABLE)}")
+            return
+        if target == active:
+            disk = str(boot.partition_disk(boot.BY_LABEL / f"boot_{target}"))
+            require(not before[disk]["entries"][f"boot_{target}"][1] & boot.UNBOOTABLE,
+                    "Already active slot is unbootable; refusing an automatic repair")
+            print(f"Slot {target.upper()} already active with matching UFS boot LUN; no metadata written.")
+            return
+        if dry_run:
+            print(f"Verified protected A/B layout; would back up GPT and select {target.upper()}.")
+            return
+        tool = next((path for path in (Path("/usr/local/bin/qbootctl"), Path("/usr/bin/qbootctl"))
+                     if path.is_file() and os.access(path, os.X_OK)), None)
+        require(tool is not None, "Pinned qbootctl is not installed")
+        hashes = hash_payloads(inventory)
+        backup = boot.save_backup(before, {**config, "operation": "select-active-slot", "target": target,
+                                         "ufs_attribute": str(attribute), "ufs_boot_lun": old_lun,
+                                         "payload_inventory": inventory, "payload_sha256": hashes})
+        print(f"GPT backup saved to {backup}", flush=True)
+        unchanged, current_pairs, current_active = snapshot_slots()
+        verify_parent_protection(unchanged)
+        require(current_pairs == pairs and current_active == active and
+                payload_inventory(pairs) == inventory and read_lun(attribute) == old_lun,
+                "Slot layout or write protection changed before selection")
+        require(all(before[disk]["regions"] == unchanged[disk]["regions"] and
+                    before[disk]["read_only"] == unchanged[disk]["read_only"] for disk in before),
+                "GPT or disk protection changed before selection")
+        result, command_error = None, None
+        with boot.writable_disks({disk: before[disk] for disk in pairs if before[disk]["read_only"]}):
+            try:
+                result = subprocess.run([str(tool), "-s", target], text=True,
+                                        capture_output=True, timeout=60)
+            except (OSError, RuntimeError, subprocess.TimeoutExpired) as error:
+                command_error = error
+            for disk in pairs:
+                with Path(disk).open("rb", buffering=0) as device:
+                    os.fsync(device.fileno())
+        save_result(backup, {"target": target, "returncode": result.returncode if result else None,
+                             "command_error": str(command_error) if command_error else None,
+                             "stdout": result.stdout if result else "", "stderr": result.stderr if result else "",
+                             "parent_protection_restoration_completed": True}, "command-attempt.json")
+        if result:
+            print(result.stdout, end="")
+            print(result.stderr, end="", file=sys.stderr)
+        try:
+            after, after_pairs, selected = snapshot_slots()
+            require(after_pairs == pairs, "Partition set changed after selection")
+            verify_change(before, after, pairs, target)
+            require(payload_inventory(pairs) == inventory, "Partition identity or read-only flags changed")
+            after_hashes = hash_payloads(inventory)
+            require(hashes == after_hashes, "Boot partition payload changed")
+            new_lun = read_lun(attribute)
+            require(command_error is None, f"qbootctl failed: {command_error}")
+            require(result is not None and result.returncode == 0 and selected == target and
+                    new_lun == (1 if target == "a" else 2), "Selected slot or UFS boot LUN was not verified")
+        except (OSError, ValueError, RuntimeError) as error:
+            save_result(backup, {"target": target, "verified": False, "error": str(error)})
+            raise
+        save_result(backup, {"target": target, "verified": True, "active_slot": selected,
+                             "ufs_boot_lun": new_lun, "payload_sha256": after_hashes,
+                             "write_protection_restored": True})
+        print(f"Slot {target.upper()} selected and verified; boot payloads unchanged and write protection restored.")
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    commands = parser.add_subparsers(dest="command", required=True)
+    commands.add_parser("status", help="inspect protected A/B metadata without writing")
+    change = commands.add_parser("select", help="select A or B without rebooting or flashing")
+    change.add_argument("slot", choices=("a", "b"))
+    change.add_argument("--dry-run", action="store_true")
+    args = parser.parse_args()
+    select(args.slot if args.command == "select" else None,
+           args.dry_run if args.command == "select" else False)
+
+
+if __name__ == "__main__":
+    os.umask(0o077)
+    signal.signal(signal.SIGTERM, boot.interrupted)
+    signal.signal(signal.SIGINT, boot.interrupted)
+    try:
+        main()
+    except (OSError, ValueError, RuntimeError, subprocess.TimeoutExpired) as error:
+        print(f"Slot selection failed: {error}", file=sys.stderr)
+        sys.exit(1)

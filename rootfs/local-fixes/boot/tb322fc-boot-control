@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+set -uo pipefail
+title='TB322FC Boot Control'
+slotctl=/usr/local/libexec/tb322fc-select-boot-slot
+recoveryctl=/usr/local/sbin/tb322fc-reboot-recovery
+
+dialog() { kdialog --title "$title" "$@"; }
+as_root() {
+    if sudo -n true 2>/dev/null; then
+        sudo -n "$@"
+    else
+        pkexec "$@"
+    fi
+}
+run_action() {
+    local output
+    if ! output=$(as_root "$@" 2>&1); then
+        dialog --error "$output"
+        return 1
+    fi
+}
+
+if [[ ! -x "$slotctl" ]]; then
+    dialog --error 'The protected slot-selection helper is not installed.'
+    exit 1
+fi
+
+while true; do
+    choice=$(dialog --menu 'Android and recovery use slot A; Linux uses slot B.' \
+        android 'Boot Android (slot A)' \
+        linux 'Boot Linux (slot B)' \
+        recovery 'Reboot to Android recovery (slot A)' \
+        fastboot 'Reboot to fastboot (Android recovery/charging)' \
+        charging 'Power off (keep selected slot)' \
+        reboot 'Reboot current slot' \
+        status 'Show A/B slot status') || exit 0
+    case "$choice" in
+        android|linux)
+            slot=a
+            [[ "$choice" == linux ]] && slot=b
+            if run_action "$slotctl" select "$slot"; then
+                run_action /usr/bin/systemctl reboot && exit 0
+            fi
+            ;;
+        recovery)
+            run_action "$recoveryctl" && exit 0
+            ;;
+        fastboot)
+            if run_action /usr/local/libexec/tb322fc-prepare-android-boot reboot --dry-run --parameter=bootloader; then
+                run_action /usr/bin/systemctl reboot --reboot-argument=bootloader && exit 0
+            fi
+            ;;
+        charging)
+            if run_action /usr/local/libexec/tb322fc-prepare-android-boot poweroff --dry-run; then
+                run_action /usr/bin/systemctl poweroff && exit 0
+            fi
+            ;;
+        reboot)
+            run_action /usr/bin/systemctl reboot && exit 0
+            ;;
+        status)
+            if output=$(as_root "$slotctl" status 2>&1); then
+                dialog --msgbox "$output"
+            else
+                dialog --error "$output"
+            fi
+            ;;
+    esac
+done

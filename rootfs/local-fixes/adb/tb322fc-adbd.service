@@ -1,0 +1,19 @@
+[Unit]
+Description=TB322FC USB Android Debug Bridge
+After=local-fs.target
+StartLimitIntervalSec=120
+StartLimitBurst=3
+
+[Service]
+Type=simple
+ExecStart=/usr/local/libexec/tb322fc-adbd
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=30
+KillMode=mixed
+Environment=TMPDIR=/var/tmp
+EnvironmentFile=/etc/tb322fc/adbd.conf
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,6 @@
+[Unit]
+Description=Battery charging on Linux slot B
+Requires=tb322fc-charger.service
+Wants=tb322fc-adbd.service
+After=tb322fc-charger.service
+AllowIsolate=yes

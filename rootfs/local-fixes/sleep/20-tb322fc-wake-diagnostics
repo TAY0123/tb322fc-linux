@@ -1,0 +1,3 @@
+#!/bin/sh
+# Runs immediately around kernel sleep, before slow radio restoration.
+exec /usr/local/libexec/tb322fc-wake-diagnostics "$@"

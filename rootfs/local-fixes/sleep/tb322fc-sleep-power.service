@@ -1,0 +1,22 @@
+[Unit]
+Description=Save radio power during tablet suspend
+Requires=tb322fc-sleep-power-recover.service
+After=tb322fc-sleep-power-recover.service NetworkManager.service bluetooth.service
+Before=sleep.target
+StopWhenUnneeded=yes
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/libexec/tb322fc-sleep-power prepare
+ExecStop=/usr/local/libexec/tb322fc-sleep-power restore
+ExecStopPost=/usr/local/libexec/tb322fc-sleep-power restore
+TimeoutStartSec=90
+TimeoutStopSec=240
+StateDirectory=tb322fc-sleep-power
+StateDirectoryMode=0700
+UMask=0077
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectHome=yes
+ProtectSystem=strict

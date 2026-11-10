@@ -1,0 +1,3 @@
+# Keep the supervisor available across UDC bind/unbind and USB role changes.
+# The supervisor manages FunctionFS and waits safely when no UDC exists.
+ACTION=="add|change", SUBSYSTEM=="udc", KERNEL=="a600000.usb", TAG+="systemd", ENV{SYSTEMD_WANTS}+="tb322fc-adbd.service"

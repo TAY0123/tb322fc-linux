@@ -1,0 +1,27 @@
+[Unit]
+Description=Confirm the attested Linux slot B boot
+After=local-fs.target systemd-udev-settle.service
+Wants=systemd-udev-settle.service
+Before=display-manager.service
+ConditionPathExists=/etc/tb322fc/boot-success.json
+ConditionPathExists=/dev/disk/by-partlabel/boot_b
+ConditionArchitecture=arm64
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/libexec/tb322fc-mark-boot-success
+RemainAfterExit=yes
+StateDirectory=tb322fc-boot-success
+StateDirectoryMode=0700
+UMask=0077
+TimeoutStartSec=120
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+
+[Install]
+WantedBy=multi-user.target

@@ -1,2 +1,3 @@
 patches/**/*.patch -whitespace
 packages/**/*.patch -whitespace
+rootfs/local-fixes/kernel/**/*.patch -whitespace

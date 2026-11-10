@@ -1,0 +1,18 @@
+[Unit]
+Description=Y700 screen off with tap to wake
+PartOf=graphical-session.target
+After=plasma-kwin_wayland.service plasma-powerdevil.service
+
+[Service]
+Type=dbus
+BusName=org.y700.ScreenBlank
+ExecStart=/usr/local/libexec/y700-screen-blank daemon
+ExecStopPost=/usr/local/libexec/y700-screen-blank restore-saved
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=10
+NoNewPrivileges=yes
+UMask=0077
+
+[Install]
+WantedBy=plasma-workspace.target

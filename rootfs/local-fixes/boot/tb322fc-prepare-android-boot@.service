@@ -1,0 +1,13 @@
+[Unit]
+Description=Prepare Android slot for %i boot mode
+DefaultDependencies=no
+Before=shutdown.target umount.target systemd-reboot.service systemd-poweroff.service
+ConditionPathExists=/etc/tb322fc/boot-success.json
+ConditionPathExists=/dev/disk/by-partlabel/boot_a
+
+[Service]
+Type=oneshot
+Slice=system.slice
+ExecStart=/usr/local/libexec/tb322fc-prepare-android-boot %i
+TimeoutStartSec=120
+UMask=0077

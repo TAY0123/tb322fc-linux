@@ -1,0 +1,18 @@
+Subject: [EXPERIMENTAL] power: supply: qcom_battmgr: require reachable DRM panel support
+
+Prepare an opt-in hardware experiment against the installed Y700 kernel.
+Reliable notification suppression during deep suspend remains unverified.
+
+---
+
+diff --git a/drivers/power/supply/Kconfig b/drivers/power/supply/Kconfig
+--- a/drivers/power/supply/Kconfig
++++ b/drivers/power/supply/Kconfig
+@@ -211,6 +211,7 @@
+ config BATTERY_QCOM_BATTMGR
+ 	tristate "Qualcomm PMIC GLINK battery manager support"
+ 	depends on QCOM_PMIC_GLINK
++	depends on DRM_PANEL || !DRM_PANEL
+ 	select AUXILIARY_BUS
+ 	help
+ 	  Say Y here to enable the Qualcomm PMIC GLINK power supply driver,

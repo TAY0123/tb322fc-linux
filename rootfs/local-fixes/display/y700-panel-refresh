@@ -1,0 +1,81 @@
+#!/usr/bin/python3
+"""Apply the internal-panel refresh rate for KDE's current power profile."""
+import argparse
+import fcntl
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+import syslog
+
+RATES = {"AC": 165, "Battery": 90, "LowBattery": 60}
+
+
+def run(*args):
+    return subprocess.run(args, check=True, capture_output=True, text=True, timeout=15).stdout
+
+
+def kde_profile():
+    reply = run(
+        "/usr/bin/busctl", "--user", "call", "org.kde.Solid.PowerManagement",
+        "/org/kde/Solid/PowerManagement", "org.kde.Solid.PowerManagement", "currentProfile",
+    )
+    return json.loads(reply.split(" ", 1)[1])
+
+
+def panel():
+    data = json.loads(run("/usr/bin/kscreen-doctor", "-j"))
+    return next((output for output in data["outputs"] if output["name"] == "DSI-1"), None)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--profile", choices=RATES, help="one-time profile override for verification")
+    parser.add_argument("--dry-run", action="store_true")
+    args = parser.parse_args()
+    runtime = Path(os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}"))
+    with (runtime / "y700-panel-refresh.lock").open("a") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        profile = args.profile or kde_profile()
+        if profile not in RATES:
+            raise RuntimeError(f"Unknown KDE power profile: {profile}")
+        output = panel()
+        if not output or not output["connected"] or not output["enabled"]:
+            print("Internal panel disabled or disconnected; no change")
+            return
+        current = next(mode for mode in output["modes"] if mode["id"] == output["currentModeId"])
+        target = next((mode for mode in output["modes"]
+                       if mode["size"] == current["size"]
+                       and abs(mode["refreshRate"] - RATES[profile]) < 0.1), None)
+        if target is None:
+            raise RuntimeError(f"No {RATES[profile]} Hz mode for the current panel resolution")
+        if target["id"] == current["id"]:
+            print(f"{profile}: internal panel already at {RATES[profile]} Hz")
+            return
+        command = ("/usr/bin/kscreen-doctor", f"output.DSI-1.mode.{target['id']}")
+        if args.dry_run:
+            print(f"{profile}: " + " ".join(command))
+            return
+        # Discard a stale hook if power changed while the display query ran.
+        if args.profile is None and kde_profile() != profile:
+            print("Power profile changed; the newer profile hook will apply its rate")
+            return
+        run(*command)
+        updated = panel()
+        if not updated or updated["currentModeId"] != target["id"]:
+            raise RuntimeError("Panel refresh-rate verification failed")
+        message = f"{profile}: internal panel set to {RATES[profile]} Hz"
+        print(message)
+        syslog.syslog(syslog.LOG_INFO, message)
+
+
+if __name__ == "__main__":
+    syslog.openlog("y700-panel-refresh")
+    try:
+        main()
+    except (OSError, ValueError, KeyError, StopIteration, RuntimeError, subprocess.SubprocessError) as error:
+        message = f"Refresh-rate hook failed: {error}"
+        print(message, file=sys.stderr)
+        syslog.syslog(syslog.LOG_ERR, message)
+        sys.exit(1)

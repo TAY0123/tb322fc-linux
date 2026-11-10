@@ -1,0 +1,68 @@
+#!/usr/bin/env python3
+"""Clear only a consumed Android bootonce-bootloader request after Linux boot."""
+import fcntl
+import importlib.machinery
+import importlib.util
+import os
+import signal
+from pathlib import Path
+import time
+
+HELPER = '/usr/local/sbin/tb322fc-reboot-recovery'
+
+
+def clear_message(original):
+    command = original[:32].split(b'\0', 1)[0]
+    recovery = original[64:832].split(b'\0', 1)[0]
+    if command != b'bootonce-bootloader' or recovery.strip():
+        return None
+    return bytes(32) + original[32:]
+
+
+def main():
+    if os.geteuid() != 0:
+        raise RuntimeError('run as root')
+    os.umask(0o077)
+    loader = importlib.machinery.SourceFileLoader('recovery_guard', HELPER)
+    spec = importlib.util.spec_from_loader(loader.name, loader)
+    helper = importlib.util.module_from_spec(spec)
+    loader.exec_module(helper)
+    guard = helper.load_guard()
+    with helper.slot_lock():
+        guard.verify_installed_linux()
+        snapshots, pairs, active = guard.snapshot_slots()
+        if active != 'b':
+            raise RuntimeError('Refusing cleanup outside verified Linux slot B')
+        original = helper.MISC.read_bytes()
+        if not 4096 <= len(original) <= 16 * 1024 * 1024:
+            raise RuntimeError('Unexpected misc partition size')
+        desired = clear_message(original)
+        if desired is None:
+            print('No consumed bootonce-bootloader request to clear.')
+            return
+        parent = guard.boot.partition_disk(helper.MISC)
+        guard.verify_partition_geometry(helper.MISC, guard.boot.read_gpt(parent), len(original))
+        state = Path('/var/lib/tb322fc-boot-mode-backups')
+        state.mkdir(mode=0o700, exist_ok=True)
+        backup = state / f'consumed-bootloader-{time.time_ns()}'
+        backup.mkdir(mode=0o700)
+        helper.save(backup / 'misc.before.bin', original)
+        helper.save(backup / 'misc.after.bin', desired)
+        for directory in (backup, state):
+            fd = os.open(directory, os.O_DIRECTORY)
+            try:
+                os.fsync(fd)
+            finally:
+                os.close(fd)
+        # Shared helper verifies expected bytes, writes only BCB fields, verifies
+        # the entire partition, rolls back on a failed write and restores RO.
+        helper.write_message(original, desired)
+        print(f'Cleared consumed bootloader command only. Backup: {backup}')
+
+
+if __name__ == '__main__':
+    def interrupted(signum, frame):
+        raise InterruptedError(f'Interrupted by signal {signum}')
+    signal.signal(signal.SIGTERM, interrupted)
+    signal.signal(signal.SIGINT, interrupted)
+    main()

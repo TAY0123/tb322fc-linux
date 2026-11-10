@@ -1,0 +1,16 @@
+[Unit]
+Description=Clear consumed Android bootloader request after verified Linux boot
+Requires=tb322fc-boot-success.service
+After=tb322fc-boot-success.service
+Before=display-manager.service
+ConditionPathExists=/usr/local/sbin/tb322fc-reboot-recovery
+ConditionPathExists=/etc/tb322fc/boot-success.json
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/libexec/tb322fc-clear-consumed-bootloader-request
+RemainAfterExit=yes
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

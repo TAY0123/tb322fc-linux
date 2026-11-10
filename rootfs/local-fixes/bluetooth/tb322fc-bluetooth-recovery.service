@@ -1,0 +1,9 @@
+[Unit]
+Description=Retry failed TB322FC Bluetooth startup
+ConditionKernelCommandLine=nohibernate
+ConditionPathExists=/usr/local/sbin/tb322fc-bluetooth-identity
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/tb322fc-bluetooth-identity --retry-failed-service
+TimeoutStartSec=30s

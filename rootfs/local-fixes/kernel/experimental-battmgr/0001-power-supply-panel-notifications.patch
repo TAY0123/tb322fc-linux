@@ -1,0 +1,323 @@
+Subject: [EXPERIMENTAL] power: supply: qcom_battmgr: follow the vendor display-blank policy
+
+Prepare an opt-in hardware experiment against the installed Y700 kernel.
+Reliable notification suppression during deep suspend remains unverified.
+
+---
+
+diff --git a/drivers/power/supply/qcom_battmgr.c b/drivers/power/supply/qcom_battmgr.c
+--- a/drivers/power/supply/qcom_battmgr.c
++++ b/drivers/power/supply/qcom_battmgr.c
+@@ -12,6 +12,8 @@
+ #include <linux/of_device.h>
+ #include <linux/power_supply.h>
+ #include <linux/property.h>
++#include <linux/suspend.h>
++#include <drm/drm_panel.h>
+ #include <linux/soc/qcom/pdr.h>
+ #include <linux/soc/qcom/pmic_glink.h>
+ #include <linux/math.h>
+@@ -31,6 +33,7 @@
+ #define BATTMGR_BAT_STATUS		0x1
+ 
+ #define BATTMGR_REQUEST_NOTIFICATION	0x4
++#define BATTMGR_DISABLE_NOTIFICATION	0x5
+ 
+ #define BATTMGR_NOTIFICATION		0x7
+ #define NOTIF_BAT_PROPERTY		0x30
+@@ -330,6 +333,13 @@
+ 
+ 	bool service_up;
+ 	bool current_inverted;
++	bool panel_following;
++	bool panel_on;
++	bool suspend_pending;
++	int notification_state; /* -1 unknown, 0 disabled, 1 enabled */
++	u32 pending_opcode;
++	struct drm_panel_follower panel_follower;
++	struct notifier_block pm_notifier;
+ 
+ 	struct qcom_battmgr_info info;
+ 	struct qcom_battmgr_status status;
+@@ -348,22 +358,24 @@
+ 
+ static int qcom_battmgr_request(struct qcom_battmgr *battmgr, void *data, size_t len)
+ {
++	const struct pmic_glink_hdr *hdr = data;
+ 	unsigned long left;
+ 	int ret;
+ 
+ 	reinit_completion(&battmgr->ack);
++	WRITE_ONCE(battmgr->pending_opcode, le32_to_cpu(hdr->opcode));
+ 
+ 	battmgr->error = 0;
+ 
+ 	ret = pmic_glink_send(battmgr->client, data, len);
+ 	if (ret < 0)
+-		return ret;
++		goto out;
+ 
+ 	left = wait_for_completion_timeout(&battmgr->ack, HZ);
+-	if (!left)
+-		return -ETIMEDOUT;
+-
+-	return battmgr->error;
++	ret = left ? battmgr->error : -ETIMEDOUT;
++out:
++	WRITE_ONCE(battmgr->pending_opcode, 0);
++	return ret;
+ }
+ 
+ static int qcom_battmgr_request_property(struct qcom_battmgr *battmgr, int opcode,
+@@ -1663,7 +1675,23 @@
+ {
+ 	const struct pmic_glink_hdr *hdr = data;
+ 	struct qcom_battmgr *battmgr = priv;
+-	unsigned int opcode = le32_to_cpu(hdr->opcode);
++	unsigned int opcode;
++
++	if (len < sizeof(*hdr))
++		return;
++	opcode = le32_to_cpu(hdr->opcode);
++	if (opcode != BATTMGR_NOTIFICATION &&
++	    opcode != READ_ONCE(battmgr->pending_opcode))
++		return;
++	if (opcode == BATTMGR_REQUEST_NOTIFICATION ||
++	    opcode == BATTMGR_DISABLE_NOTIFICATION) {
++		/* The vendor protocol ACKs control replies without a property payload. */
++		if (opcode == READ_ONCE(battmgr->pending_opcode)) {
++			battmgr->error = 0;
++			complete(&battmgr->ack);
++		}
++		return;
++	}
+ 
+ 	if (opcode == BATTMGR_NOTIFICATION)
+ 		qcom_battmgr_notification(battmgr, data, len);
+@@ -1674,18 +1702,153 @@
+ 		qcom_battmgr_sm8350_callback(battmgr, data, len);
+ }
+ 
+-static void qcom_battmgr_enable_worker(struct work_struct *work)
+-{
+-	struct qcom_battmgr *battmgr = container_of(work, struct qcom_battmgr, enable_work);
++/*
++ * Experimental SM8750 adaptation of the older Qualcomm charger driver's
++ * display-blank notification policy. A successful ACK is not proof that the
++ * firmware will suppress every notification or that deep suspend is fixed.
++ * The caller holds battmgr->lock for every notification-control transaction.
++ */
++static bool qcom_battmgr_notifications_wanted(struct qcom_battmgr *battmgr)
++{
++	return !battmgr->panel_following ||
++		(battmgr->panel_on && !battmgr->suspend_pending);
++}
++
++static int qcom_battmgr_set_notifications(struct qcom_battmgr *battmgr,
++					bool enable)
++{
+ 	struct qcom_battmgr_enable_request req = {
+ 		.hdr.owner = cpu_to_le32(PMIC_GLINK_OWNER_BATTMGR),
+ 		.hdr.type = cpu_to_le32(PMIC_GLINK_NOTIFY),
+-		.hdr.opcode = cpu_to_le32(BATTMGR_REQUEST_NOTIFICATION),
++		.hdr.opcode = cpu_to_le32(enable ? BATTMGR_REQUEST_NOTIFICATION :
++						BATTMGR_DISABLE_NOTIFICATION),
+ 	};
+ 	int ret;
+ 
++	if (!READ_ONCE(battmgr->service_up))
++		return -ENOTCONN;
++	if (READ_ONCE(battmgr->notification_state) == enable)
++		return 0;
++
++	ret = qcom_battmgr_request(battmgr, &req, sizeof(req));
++	if (ret || !READ_ONCE(battmgr->service_up)) {
++		WRITE_ONCE(battmgr->notification_state, -1);
++		return ret ?: -ENOTCONN;
++	}
++
++	WRITE_ONCE(battmgr->notification_state, enable);
++	dev_info(battmgr->dev, "firmware notifications %s (panel=%u suspend=%u)\n",
++		 enable ? "enabled" : "disabled", battmgr->panel_on,
++		 battmgr->suspend_pending);
++	return 0;
++}
++
++static void qcom_battmgr_refresh_supplies(struct qcom_battmgr *battmgr)
++{
++	power_supply_changed(battmgr->bat_psy);
++	power_supply_changed(battmgr->usb_psy);
++}
++
++static int qcom_battmgr_panel_enabled(struct drm_panel_follower *follower)
++{
++	struct qcom_battmgr *battmgr = container_of(follower, struct qcom_battmgr,
++						 panel_follower);
++	bool refresh;
++	int ret;
++
+ 	mutex_lock(&battmgr->lock);
+-	ret = qcom_battmgr_request(battmgr, &req, sizeof(req));
++	battmgr->panel_on = true;
++	refresh = !battmgr->suspend_pending;
++	ret = qcom_battmgr_set_notifications(battmgr,
++				qcom_battmgr_notifications_wanted(battmgr));
++	mutex_unlock(&battmgr->lock);
++	if (ret) {
++		dev_warn(battmgr->dev, "panel notification restore failed: %d\n", ret);
++		schedule_work(&battmgr->enable_work);
++	}
++	if (refresh)
++		qcom_battmgr_refresh_supplies(battmgr);
++	return 0;
++}
++
++static int qcom_battmgr_panel_disabling(struct drm_panel_follower *follower)
++{
++	struct qcom_battmgr *battmgr = container_of(follower, struct qcom_battmgr,
++						 panel_follower);
++	int ret;
++
++	mutex_lock(&battmgr->lock);
++	battmgr->panel_on = false;
++	ret = qcom_battmgr_set_notifications(battmgr, false);
++	mutex_unlock(&battmgr->lock);
++	if (ret)
++		dev_warn(battmgr->dev, "panel notification pause failed: %d\n", ret);
++	/* Display blanking still works; suspend preparation retries the command. */
++	return 0;
++}
++
++static const struct drm_panel_follower_funcs qcom_battmgr_panel_funcs = {
++	.panel_enabled = qcom_battmgr_panel_enabled,
++	.panel_disabling = qcom_battmgr_panel_disabling,
++};
++
++static int qcom_battmgr_pm_notify(struct notifier_block *nb,
++				unsigned long action, void *unused)
++{
++	struct qcom_battmgr *battmgr = container_of(nb, struct qcom_battmgr,
++						 pm_notifier);
++	int restore_ret;
++	int ret;
++
++	if (action != PM_SUSPEND_PREPARE && action != PM_POST_SUSPEND)
++		return NOTIFY_DONE;
++
++	if (action == PM_SUSPEND_PREPARE) {
++		/* Block a service-restart worker before draining existing work. */
++		mutex_lock(&battmgr->lock);
++		battmgr->suspend_pending = true;
++		mutex_unlock(&battmgr->lock);
++		cancel_work_sync(&battmgr->enable_work);
++	}
++
++	mutex_lock(&battmgr->lock);
++	if (action == PM_POST_SUSPEND)
++		battmgr->suspend_pending = false;
++	ret = qcom_battmgr_set_notifications(battmgr,
++				qcom_battmgr_notifications_wanted(battmgr));
++	if (ret && action == PM_SUSPEND_PREPARE) {
++		/* A failing notifier must undo its own preparation on an abort. */
++		battmgr->suspend_pending = false;
++		WRITE_ONCE(battmgr->notification_state, -1);
++		restore_ret = qcom_battmgr_set_notifications(battmgr,
++				qcom_battmgr_notifications_wanted(battmgr));
++		if (restore_ret)
++			dev_warn(battmgr->dev, "notification rollback failed: %d\n",
++				 restore_ret);
++	}
++	mutex_unlock(&battmgr->lock);
++	if (ret) {
++		dev_warn(battmgr->dev, "sleep notification control failed: %d\n", ret);
++		schedule_work(&battmgr->enable_work);
++	}
++	if (action == PM_POST_SUSPEND)
++		qcom_battmgr_refresh_supplies(battmgr);
++	return action == PM_SUSPEND_PREPARE ? notifier_from_errno(ret) : NOTIFY_OK;
++}
++
++static void qcom_battmgr_unregister_pm(void *data)
++{
++	unregister_pm_notifier(data);
++}
++
++static void qcom_battmgr_enable_worker(struct work_struct *work)
++{
++	struct qcom_battmgr *battmgr = container_of(work, struct qcom_battmgr, enable_work);
++	int ret;
++
++	mutex_lock(&battmgr->lock);
++	ret = qcom_battmgr_set_notifications(battmgr,
++				qcom_battmgr_notifications_wanted(battmgr));
+ 	if (ret) {
+ 		dev_err(battmgr->dev, "failed to request power notifications\n");
+ 		goto out;
+@@ -1705,12 +1868,11 @@
+ {
+ 	struct qcom_battmgr *battmgr = priv;
+ 
+-	if (state == SERVREG_SERVICE_STATE_UP) {
+-		battmgr->service_up = true;
++	/* A remote restart invalidates any previously acknowledged state. */
++	WRITE_ONCE(battmgr->notification_state, -1);
++	WRITE_ONCE(battmgr->service_up, state == SERVREG_SERVICE_STATE_UP);
++	if (state == SERVREG_SERVICE_STATE_UP)
+ 		schedule_work(&battmgr->enable_work);
+-	} else {
+-		battmgr->service_up = false;
+-	}
+ }
+ 
+ static const struct of_device_id qcom_battmgr_of_variants[] = {
+@@ -1743,6 +1905,7 @@
+ 		return -ENOMEM;
+ 
+ 	battmgr->dev = dev;
++	battmgr->notification_state = -1;
+ 	battmgr->current_inverted = device_property_read_bool(dev->parent,
+ 							      "qcom,battery-current-inverted");
+ 
+@@ -1820,11 +1983,6 @@
+ 					     "failed to register wireless charing power supply\n");
+ 	}
+ 
+-	ret = devm_work_autocancel(dev, &battmgr->enable_work,
+-				   qcom_battmgr_enable_worker);
+-	if (ret)
+-		return ret;
+-
+ 	battmgr->client = devm_pmic_glink_client_alloc(dev, PMIC_GLINK_OWNER_BATTMGR,
+ 						       qcom_battmgr_callback,
+ 						       qcom_battmgr_pdr_notify,
+@@ -1832,7 +1990,30 @@
+ 	if (IS_ERR(battmgr->client))
+ 		return PTR_ERR(battmgr->client);
+ 
++	ret = devm_work_autocancel(dev, &battmgr->enable_work,
++				   qcom_battmgr_enable_worker);
++	if (ret)
++		return ret;
++
++	battmgr->panel_following = battmgr->variant == QCOM_BATTMGR_SM8750 &&
++				  drm_is_panel_follower(dev);
+ 	pmic_glink_client_register(battmgr->client);
++
++	if (battmgr->panel_following) {
++		battmgr->panel_follower.funcs = &qcom_battmgr_panel_funcs;
++		ret = devm_drm_panel_add_follower(dev, &battmgr->panel_follower);
++		if (ret)
++			return dev_err_probe(dev, ret, "failed to follow battery panel\n");
++
++		battmgr->pm_notifier.notifier_call = qcom_battmgr_pm_notify;
++		ret = register_pm_notifier(&battmgr->pm_notifier);
++		if (ret)
++			return ret;
++		ret = devm_add_action_or_reset(dev, qcom_battmgr_unregister_pm,
++					       &battmgr->pm_notifier);
++		if (ret)
++			return ret;
++	}
+ 
+ 	return 0;
+ }

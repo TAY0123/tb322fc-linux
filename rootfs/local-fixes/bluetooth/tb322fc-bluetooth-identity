@@ -1,0 +1,218 @@
+#!/usr/bin/python3
+"""Initialize the tablet Bluetooth identity, recovering failed UART setup."""
+from dataclasses import dataclass
+from pathlib import Path
+import re
+import os
+import subprocess
+import sys
+import time
+
+ADDRESS = None  # Loaded from a private systemd EnvironmentFile in main().
+MODULE = Path('/sys/module/bt_android_identity')
+DEVICE = Path('/sys/bus/serial/devices/serial0-0')
+DRIVER = Path('/sys/bus/serial/drivers/hci_uart_qca')
+UART = Path('/sys/bus/platform/devices/898000.serial')
+UART_DRIVER = Path('/sys/bus/platform/drivers/qcom_geni_serial')
+UNAVAILABLE = Path('/run/tb322fc-bluetooth-unavailable')
+ATTEMPTS = 3
+ATTEMPT_SECONDS = 180
+
+
+class SetupError(RuntimeError):
+    pass
+
+
+def log(message):
+    print(message, flush=True)
+
+
+def remaining(deadline, maximum):
+    seconds = min(maximum, deadline - time.monotonic())
+    if seconds <= 0:
+        raise SetupError('Controller initialization deadline expired')
+    return seconds
+
+
+def command(*args, deadline, timeout=20, input=None):
+    try:
+        result = subprocess.run(args, capture_output=True, text=True, input=input,
+                                timeout=remaining(deadline, timeout))
+    except subprocess.TimeoutExpired as error:
+        raise SetupError(f'{" ".join(args)} timed out') from error
+    output = (result.stdout + '\n' + result.stderr).strip()
+    # btmgmt can report a management-command failure while exiting with zero.
+    if result.returncode or (args[0] == 'btmgmt' and
+                            re.search(r'\bfailed\b|invalid index', output, re.I)):
+        raise SetupError(f'{" ".join(args)}: {output or result.returncode}')
+    return output
+
+
+@dataclass
+class Controller:
+    address: str
+    powered: bool
+
+
+def info(deadline):
+    output = command('btmgmt', '--index', '0', 'info', deadline=deadline, timeout=8)
+    address = re.search(r'\baddr ([0-9A-F:]{17}) version \d+ manufacturer 29\b',
+                        output, re.I)
+    settings = re.search(r'current settings:([^\n]*)', output)
+    if not address or not settings or address[1] == '00:00:00:00:00:00':
+        raise SetupError('Qualcomm controller is not initialized: ' + output)
+    return Controller(address[1].upper(), 'powered' in settings[1].split())
+
+
+def wait_for(deadline, *, address=None, powered=None, timeout=90):
+    end = min(deadline, time.monotonic() + timeout)
+    last = 'No controller response'
+    while time.monotonic() < end:
+        try:
+            state = info(end)
+            if ((address is None or state.address == address)
+                    and (powered is None or state.powered == powered)):
+                return state
+            last = f'address={state.address}, powered={state.powered}'
+        except SetupError as error:
+            last = str(error)
+        time.sleep(min(1, max(0, end - time.monotonic())))
+    raise SetupError('Controller did not become ready: ' + last)
+
+
+def configure(deadline):
+    state = wait_for(deadline)
+    if not (state.address == ADDRESS and MODULE.is_dir()):
+        if state.powered:
+            command('btmgmt', '--index', '0', 'power', 'off', deadline=deadline)
+            wait_for(deadline, powered=False, timeout=15)
+        # The kernel auto-off worker can still hold HCI_UP for two seconds.
+        load_end = min(deadline, time.monotonic() + 15)
+        while True:
+            try:
+                command('modprobe', 'bt_android_identity', 'address=' + ADDRESS,
+                        deadline=load_end)
+                break
+            except SetupError:
+                if time.monotonic() >= load_end:
+                    raise
+                time.sleep(1)
+        if state.address != ADDRESS:
+            command('btmgmt', '--index', '0', 'public-addr', ADDRESS,
+                    deadline=deadline)
+        # A failed Qualcomm download can spend another ~120s in the kernel's
+        # power-on retry. Let that finish before attempting driver teardown.
+        state = wait_for(deadline, address=ADDRESS, timeout=150)
+    # BlueZ must set privacy, IRKs and controller mode while powered OFF.
+    # The configured management index only returns after HCI setup completes;
+    # powering it on here would prevent BlueZ from applying those settings.
+    if state.powered:
+        pid = command('systemctl', 'show', 'bluetooth.service', '--property=MainPID',
+                      '--value', deadline=deadline)
+        if pid == '0':
+            command('btmgmt', '--index', '0', 'power', 'off', deadline=deadline)
+            wait_for(deadline, address=ADDRESS, powered=False, timeout=15)
+    log('Android Bluetooth identity verified; controller ready for BlueZ: ' + ADDRESS)
+
+
+def reset_controller():
+    deadline = time.monotonic() + 150
+    pid = command('systemctl', 'show', 'bluetooth.service', '--property=MainPID',
+                  '--value', deadline=deadline)
+    if pid != '0':
+        raise SetupError('Refusing UART reset while bluetoothd is running')
+    compatible = (UART / 'of_node/bluetooth/compatible').read_bytes().split(b'\0')
+    if b'qcom,wcn7861-bt' not in compatible:
+        raise SetupError('Unexpected Bluetooth hardware; refusing reset')
+    if (DEVICE / 'driver').exists() and (DEVICE / 'driver').resolve() != DRIVER:
+        raise SetupError('Unexpected UART driver; refusing reset')
+    if (UART / 'driver').exists() and (UART / 'driver').resolve() != UART_DRIVER:
+        raise SetupError('Unexpected platform UART driver; refusing reset')
+    # This module owns a reference and a callback into the old hci_dev.
+    # Restore that callback and release the reference BEFORE removing it.
+    if MODULE.is_dir():
+        command('modprobe', '-r', 'bt_android_identity', deadline=deadline, timeout=90)
+    log('Resetting Qualcomm Bluetooth UART after failed initialization')
+    try:
+        if (UART / 'driver').exists():
+            # Recreate the UART as well as its Bluetooth child: after a TLV
+            # timeout the serial transmit queue can remain stuck across a
+            # Bluetooth-child-only rebind (uart_wait_until_sent).
+            command('tee', str(UART_DRIVER / 'unbind'), input=UART.name + '\n',
+                    deadline=deadline, timeout=90)
+    finally:
+        # Also repair a previous recovery interrupted between unbind and bind.
+        if not (UART / 'driver').exists():
+            time.sleep(2)
+            command('tee', str(UART_DRIVER / 'bind'), input=UART.name + '\n',
+                    deadline=time.monotonic() + 30, timeout=30)
+
+
+def configure_with_retries():
+    for attempt in range(1, ATTEMPTS + 1):
+        try:
+            if attempt > 1 or not (UART / 'driver').exists():
+                reset_controller()
+            elif not (DEVICE / 'driver').exists():
+                # Repair an interrupted child-driver rebind from older setups.
+                command('tee', str(DRIVER / 'bind'), input=DEVICE.name + '\n',
+                        deadline=time.monotonic() + 30, timeout=30)
+            log(f'Bluetooth initialization attempt {attempt}/{ATTEMPTS}')
+            configure(time.monotonic() + ATTEMPT_SECONDS)
+            return
+        except (SetupError, OSError) as error:
+            log(f'Bluetooth initialization attempt {attempt}/{ATTEMPTS} failed: {error}')
+            if attempt == ATTEMPTS:
+                raise
+            time.sleep(5)
+
+
+def retry_failed_service():
+    """Retry failures, leaving a healthy or deliberately stopped radio alone."""
+    deadline = time.monotonic() + 15
+    states = [command('systemctl', 'show', unit, '--property=ActiveState', '--value',
+                      deadline=deadline)
+              for unit in ('tb322fc-bluetooth-identity.service', 'bluetooth.service')]
+    if 'failed' in states:
+        log('Retrying failed Bluetooth startup')
+        command('systemctl', '--no-block', 'start', 'bluetooth.service', deadline=deadline)
+    elif states == ['active', 'active']:
+        try:
+            info(deadline)
+        except SetupError:
+            # A daemon can remain running after its controller's HCI setup
+            # fails. Require two observations at least two minutes apart to
+            # avoid interrupting a normal (or internally retried) firmware load.
+            now = time.monotonic()
+            try:
+                first = float(UNAVAILABLE.read_text())
+            except (OSError, ValueError):
+                first = now
+                UNAVAILABLE.write_text(str(now))
+            if now - first >= 120:
+                log('Controller remains unavailable; restarting Bluetooth initialization')
+                command('systemctl', '--no-block', 'restart',
+                        'tb322fc-bluetooth-identity.service', 'bluetooth.service',
+                        deadline=deadline)
+                UNAVAILABLE.unlink(missing_ok=True)
+        else:
+            UNAVAILABLE.unlink(missing_ok=True)
+    else:
+        UNAVAILABLE.unlink(missing_ok=True)
+
+
+if __name__ == '__main__':
+    try:
+        ADDRESS = os.environ.get('TB322FC_BLUETOOTH_ADDRESS', '').upper()
+        if (not re.fullmatch(r'[0-9A-F]{2}(?::[0-9A-F]{2}){5}', ADDRESS)
+                or ADDRESS == '00:00:00:00:00:00' or int(ADDRESS[:2], 16) & 1):
+            raise SetupError('Set a valid unicast TB322FC_BLUETOOTH_ADDRESS in private configuration')
+        if sys.argv[1:] == ['--retry-failed-service']:
+            retry_failed_service()
+        elif sys.argv[1:]:
+            raise SetupError('Unexpected arguments')
+        else:
+            configure_with_retries()
+    except (SetupError, OSError) as error:
+        log('Android Bluetooth identity failed: ' + str(error))
+        sys.exit(1)

@@ -1,0 +1,175 @@
+--- a/arch/arm64/kernel/setup.c
++++ b/arch/arm64/kernel/setup.c
+@@ -61,6 +61,10 @@
+ phys_addr_t __fdt_pointer __initdata;
+ u64 mmu_enabled_at_boot __initdata;
+ 
++#ifdef CONFIG_BUILTIN_DTB
++#include "tb322fc-bootmeta.h"
++#endif
++
+ /*
+  * Standard memory resources
+  */
+@@ -290,7 +294,9 @@
+ 	early_ioremap_init();
+ 
+ #ifdef CONFIG_BUILTIN_DTB
++	tb322fc_capture_boot_metadata();
+ 	setup_machine_fdt(__pa_symbol(__dtb_start));
++	tb322fc_append_boot_metadata();
+ 	pr_info("Using built-in device tree\n");
+ #else
+ 	setup_machine_fdt(__fdt_pointer);
+--- /dev/null
++++ b/arch/arm64/kernel/tb322fc-bootmeta.h
+@@ -0,0 +1,149 @@
++/* SPDX-License-Identifier: GPL-2.0-only */
++/* Preserve only boot mode/reason while retaining the board's built-in DTB. */
++#include <linux/ctype.h>
++#include <linux/io.h>
++#include <linux/sizes.h>
++#include <linux/libfdt.h>
++#include <linux/unaligned.h>
++
++static char tb322fc_boot_mode[64] __initdata;
++static char tb322fc_boot_reason[128] __initdata;
++
++static void __init tb322fc_copy_boot_value(const char *text, size_t len,
++					 const char *key, char *out, size_t cap)
++{
++	size_t klen = strlen(key), i, j, n;
++
++	for (i = 0; i + klen < len; i++) {
++		if (i && !isspace(text[i - 1]))
++			continue;
++		if (memcmp(text + i, key, klen))
++			continue;
++		j = i + klen;
++		while (j < len && isspace(text[j]))
++			j++;
++		if (j == len || text[j++] != '=')
++			continue;
++		while (j < len && isspace(text[j]))
++			j++;
++		if (j < len && (text[j] == '"' || text[j] == '\''))
++			j++;
++		n = 0;
++		while (j + n < len && (isalnum(text[j + n]) ||
++		       (strchr("_,.-", text[j + n]) && text[j + n])))
++			n++;
++		if (n && n < cap) {
++			memcpy(out, text + j, n);
++			out[n] = '\0';
++			return;
++		}
++	}
++}
++
++static void __init tb322fc_read_boot_values(const char *text, size_t len)
++{
++	tb322fc_copy_boot_value(text, len, "androidboot.mode",
++			       tb322fc_boot_mode, sizeof(tb322fc_boot_mode));
++	tb322fc_copy_boot_value(text, len, "androidboot.bootreason",
++			       tb322fc_boot_reason, sizeof(tb322fc_boot_reason));
++}
++
++static u64 __init tb322fc_fdt_addr(const void *fdt, int node, const char *name)
++{
++	const void *p;
++	int len;
++
++	p = fdt_getprop(fdt, node, name, &len);
++	if (!p)
++		return 0;
++	if (len == sizeof(__be64))
++		return get_unaligned_be64(p);
++	if (len == sizeof(__be32))
++		return get_unaligned_be32(p);
++	return 0;
++}
++
++static void __init tb322fc_read_bootconfig(u64 start, u64 end)
++{
++	static const char magic[] = "#BOOTCONFIG\n";
++	const unsigned char *tail, *data;
++	u32 len, checksum, actual;
++	u64 data_end;
++	int i, j;
++
++	/* Never use or unpack the Android initrd. Read its checked config tail. */
++	if (!start || end <= start || end - start < 24 || end - start > SZ_256M)
++		return;
++	tail = early_memremap(end - 24, 24);
++	if (!tail)
++		return;
++	for (i = 12; i >= 9; i--)
++		if (!memcmp(tail + i, magic, sizeof(magic) - 1))
++			break;
++	if (i < 9) {
++		early_memunmap((void *)tail, 24);
++		return;
++	}
++	len = get_unaligned_le32(tail + i - 8);
++	checksum = get_unaligned_le32(tail + i - 4);
++	data_end = end - 24 + i - 8;
++	early_memunmap((void *)tail, 24);
++	if (!len || len > SZ_32K || len > data_end - start)
++		return;
++	data = early_memremap(data_end - len, len);
++	if (!data)
++		return;
++	actual = 0;
++	for (j = 0; j < len; j++)
++		actual += data[j];
++	if (actual == checksum) {
++		tb322fc_read_boot_values((const char *)data, len);
++		pr_info("TB322FC boot metadata: valid bootconfig (%u bytes)\n", len);
++	} else {
++		pr_warn("TB322FC boot metadata: bootconfig checksum mismatch\n");
++	}
++	early_memunmap((void *)data, len);
++}
++
++static void __init tb322fc_capture_boot_metadata(void)
++{
++	const char *args;
++	void *fdt;
++	u64 start = 0, end = 0;
++	int size = 0, chosen, len, i;
++
++	if (__fdt_pointer == __pa_symbol(__dtb_start))
++		return;
++	fdt = fixmap_remap_fdt(__fdt_pointer, &size, PAGE_KERNEL_RO);
++	if (fdt && !fdt_check_header(fdt)) {
++		chosen = fdt_path_offset(fdt, "/chosen");
++		if (chosen >= 0) {
++			args = fdt_getprop(fdt, chosen, "bootargs", &len);
++			if (args && len > 0)
++				tb322fc_read_boot_values(args, len);
++			start = tb322fc_fdt_addr(fdt, chosen, "linux,initrd-start");
++			end = tb322fc_fdt_addr(fdt, chosen, "linux,initrd-end");
++			pr_info("TB322FC boot metadata: bootloader chosen found, initrd present=%d\n",
++				start && end > start);
++		}
++	}
++	/* Remove the temporary mapping before mapping the built-in DTB here. */
++	for (i = FIX_FDT_END; i <= FIX_FDT; i++)
++		clear_fixmap(i);
++	tb322fc_read_bootconfig(start, end);
++}
++
++static void __init tb322fc_append_boot_metadata(void)
++{
++	char extra[256];
++
++	if (!tb322fc_boot_mode[0] && !tb322fc_boot_reason[0])
++		return;
++	snprintf(extra, sizeof(extra), " androidboot.mode=%s androidboot.bootreason=%s",
++		 tb322fc_boot_mode[0] ? tb322fc_boot_mode : "unknown",
++		 tb322fc_boot_reason[0] ? tb322fc_boot_reason : "unknown");
++	if (strlen(boot_command_line) + strlen(extra) < COMMAND_LINE_SIZE)
++		strlcat(boot_command_line, extra, COMMAND_LINE_SIZE);
++	pr_info("TB322FC boot metadata: mode=%s reason=%s\n",
++		tb322fc_boot_mode, tb322fc_boot_reason);
++}
